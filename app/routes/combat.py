@@ -4,19 +4,20 @@ combat_bp = Blueprint('combat', __name__)
 
 @combat_bp.route('/')
 def index():
-    """
-    儀表板首頁。
-    顯示：
-    1. 角色資訊 (等級, EXP, 金幣)
-    2. 目前挑戰的怪物資訊
-    3. 使用者的任務清單
-    """
-    pass
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+    
+    from app.models.user import User
+    from app.models.monster import Monster
+    from app.models.task import Task
+    
+    user = User.get_by_id(user_id)
+    monster = Monster.get_current_for_user(user_id)
+    tasks = Task.get_all_by_user(user_id)
+    
+    return render_template('index.html', user=user, monster=monster, tasks=tasks)
 
 @combat_bp.route('/shop')
 def shop():
-    """
-    商店頁面。
-    顯示可用金幣兌換的獎勵。
-    """
-    pass
+    return render_template('shop.html')

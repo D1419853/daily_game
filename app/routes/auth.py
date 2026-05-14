@@ -4,25 +4,48 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    處理使用者登入。
-    GET: 渲染登入頁面。
-    POST: 驗證帳號密碼，成功則跳轉至首頁。
-    """
-    pass
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        from app.models.user import User
+        user = User.get_by_username(username)
+        
+        if user and check_password_hash(user['password_hash'], password):
+            session.clear()
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            flash('歡迎回來，冒險者！', 'success')
+            return redirect(url_for('combat.index'))
+        
+        flash('帳號或密碼錯誤。', 'danger')
+    
+    return render_template('login.html')
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """
-    處理使用者註冊。
-    GET: 渲染註冊頁面。
-    POST: 建立新使用者，成功則跳轉至登入頁。
-    """
-    pass
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        from app.models.user import User
+        if User.get_by_username(username):
+            flash('此帳號已被註冊。', 'warning')
+        elif User.create(username, password):
+            # 自動生成第一隻怪物
+            user = User.get_by_username(username)
+            from app.models.monster import Monster
+            Monster.spawn_for_user(user['id'])
+            
+            flash('註冊成功！請登入。', 'success')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('註冊失敗，請稍後再試。', 'danger')
+            
+    return render_template('register.html')
 
 @auth_bp.route('/logout')
 def logout():
-    """
-    登出使用者，清除 Session。
-    """
-    pass
+    session.clear()
+    flash('您已離開冒險。', 'info')
+    return redirect(url_for('auth.login'))

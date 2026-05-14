@@ -11,7 +11,7 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
-    with open('database/schema.sql', 'r') as f:
+    with open('database/schema.sql', 'r', encoding='utf-8') as f:
         conn.executescript(f.read())
     conn.commit()
     conn.close()
