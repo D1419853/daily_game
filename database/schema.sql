@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     level INTEGER DEFAULT 1,
     exp INTEGER DEFAULT 0,
+    title TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
     gold INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -86,6 +90,10 @@ CREATE TABLE IF NOT EXISTS user_achievements (
     FOREIGN KEY(user_id) REFERENCES users(id),
     FOREIGN KEY(achievement_id) REFERENCES achievements(id)
 );
+    description TEXT,
+    status TEXT DEFAULT 'pending',
+    exp_reward INTEGER DEFAULT 10,
+    damage INTEGER DEFAULT 10,
     category TEXT,
     status TEXT NOT NULL DEFAULT 'todo', -- todo, done
     difficulty INTEGER NOT NULL DEFAULT 1,
@@ -127,6 +135,15 @@ INSERT INTO items (name, description, price, type, bonus_stat) VALUES
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
+CREATE TABLE IF NOT EXISTS monsters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    max_hp INTEGER NOT NULL,
+    current_hp INTEGER NOT NULL,
+    image_path TEXT,
+    is_active INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 -- 怪物表
 CREATE TABLE IF NOT EXISTS monsters (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -127,6 +127,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Game - 生活目標打怪追蹤系統</title>
+    <!-- 未來可在此引入 CSS -->
+</head>
+<body>
+    <nav>
+        <!-- 導覽列：登入前後的選項 -->
+    </nav>
+    
+    <main>
+        <!-- Flash 訊息顯示區 -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <!-- 各頁面主要內容 -->
+        {% block content %}{% endblock %}
+    </main>
     <title>Quest Fighter - 生活目標加打怪系統</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
