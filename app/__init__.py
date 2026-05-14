@@ -1,5 +1,6 @@
 from flask import Flask
 import os
+from app.models.base import init_db
 from .models.db import get_db_connection
 
 def create_app():
@@ -17,6 +18,14 @@ def create_app():
 
     # 註冊 Blueprints
     from .routes.auth import auth_bp
+    from .routes.tasks import tasks_bp
+    from .routes.combat import combat_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(tasks_bp)
+    app.register_blueprint(combat_bp)
+
+    return app
     from .routes.main import main_bp
     from .routes.tasks import tasks_bp
 
