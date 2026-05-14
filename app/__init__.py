@@ -1,36 +1,8 @@
-from flask import Flask
 import os
-
-def create_app():
-    app = Flask(__name__, 
-                instance_relative_config=True,
-                template_folder='app/templates',
-                static_folder='app/static')
-    app.config.from_mapping(
-        SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'database.db'),
-    )
-
-    # 確保 instance 資料夾存在
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
-
-    # 註冊 Blueprints
-    from app.routes.auth import auth_bp
-    from app.routes.task import task_bp
-    from app.routes.index import index_bp
-
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(task_bp)
-    app.register_blueprint(index_bp)
-
-    return app
+import sqlite3
 
 def init_db():
     """初始化資料庫 (建立資料表)"""
-    import sqlite3
     db_path = 'instance/database.db'
     schema_path = 'database/schema.sql'
     
@@ -48,7 +20,6 @@ def init_db():
 
 def seed_db():
     """加入初始成就資料"""
-    import sqlite3
     db_path = 'instance/database.db'
     conn = sqlite3.connect(db_path)
     
@@ -60,7 +31,6 @@ def seed_db():
     
     cursor = conn.cursor()
     for ach in achievements:
-        # 避免重複插入
         cursor.execute('SELECT id FROM achievements WHERE name = ?', (ach[0],))
         if cursor.fetchone() is None:
             cursor.execute('''INSERT INTO achievements 
@@ -70,7 +40,3 @@ def seed_db():
     conn.commit()
     conn.close()
     print("初始成就資料已匯入。")
-
-if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True)
