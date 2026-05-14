@@ -81,6 +81,174 @@
             <p>目前沒有任務，快去召喚一些怪物吧！</p>
         </div>
         {% endif %}
+<div class="row g-4">
+    <!-- 左側：角色與怪物資訊 -->
+    <div class="col-md-5">
+        <!-- 角色狀態 -->
+        <div class="card p-4 mb-4">
+            <h4 class="mb-3 text-warning"><i class="bi bi-shield-shaded me-2"></i>冒險者狀態</h4>
+            <div class="d-flex justify-content-between mb-1">
+                <span>等級 {{ user.level }}</span>
+                <span>EXP {{ user.exp }} / 100</span>
+            </div>
+            <div class="exp-bar mb-3">
+                <div class="exp-fill" style="width: {{ user.exp }}%;"></div>
+            </div>
+            <div class="text-info">
+                <i class="bi bi-coin me-1"></i> 金幣：{{ user.gold }}
+            </div>
+        </div>
+
+        <!-- 怪物顯示 -->
+        {% if monster %}
+        <div class="card p-4 text-center">
+            <h3 class="mb-3 text-danger">正在挑戰：{{ monster.name }}</h3>
+            <div class="mb-4">
+                <!-- 這裡未來可以用 generate_image 產生怪物圖片 -->
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ monster.monster_type }}" class="monster-img img-fluid" alt="monster">
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span>HP</span>
+                <span>{{ monster.current_hp }} / {{ monster.max_hp }}</span>
+            </div>
+            <div class="hp-bar mb-2">
+                <div class="hp-fill" style="width: {{ (monster.current_hp / monster.max_hp * 100)|int }}%;"></div>
+            </div>
+            <p class="text-muted small">完成任務即可對其造成傷害！</p>
+        </div>
+        {% else %}
+        <div class="card p-4 text-center">
+            <p>目前沒有怪物，請稍候...</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 右側：任務列表 -->
+    <div class="col-md-7">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="bi bi-list-task me-2"></i>任務日誌</h4>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                    <i class="bi bi-plus-lg"></i> 發佈新任務
+                </button>
+            </div>
+
+            <div class="list-group list-group-flush bg-transparent">
+                {% for task in tasks %}
+                <div class="list-group-item bg-transparent text-white border-secondary py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="{% if task.status == 'completed' %}text-decoration-line-through text-muted{% endif %}">
+                            <span class="badge {% if task.difficulty == 1 %}bg-success{% elif task.difficulty == 2 %}bg-warning{% else %}bg-danger{% endif %} me-2">
+                                {{ '易' if task.difficulty == 1 else '中' if task.difficulty == 2 else '難' }}
+                            </span>
+                            <span class="h5 mb-0">{{ task.title }}</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            {% if task.status == 'pending' %}
+                            <form action="{{ url_for('tasks.complete_task', task_id=task.id) }}" method="POST">
+                                <button type="submit" class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-check2-circle"></i> 完成
+                                </button>
+                            </form>
+                            {% endif %}
+                            <form action="{{ url_for('tasks.delete_task', task_id=task.id) }}" method="POST" onsubmit="return confirm('確定要撤回此任務嗎？')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-center text-muted py-5">目前沒有進行中的任務。點擊上方按鈕開始冒險！</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增任務彈窗 -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">發佈冒險任務</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('tasks.add_task') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">任務內容</label>
+                        <input type="text" name="title" class="form-control bg-transparent text-white border-secondary" placeholder="例如：背 20 個單字" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">難度估計</label>
+                        <select name="difficulty" class="form-select bg-transparent text-white border-secondary">
+                            <option value="1">簡單 (10 點傷害)</option>
+                            <option value="2">普通 (30 點傷害)</option>
+                            <option value="3">困難 (50 點傷害)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">接受任務</button>
+                </div>
+            </form>
+<div class="row">
+    <!-- 角色資訊欄 -->
+    <div class="col-md-4">
+        <div class="card p-3 shadow">
+            <h4 class="text-center mb-3">勇者狀態</h4>
+            <div class="mb-3">
+                <label class="form-label d-flex justify-content-between">
+                    <span>等級 {{ character.level }}</span>
+                    <span>XP: {{ character.xp }} / 100</span>
+                </label>
+                <div class="progress" style="height: 10px; background-color: #0f3460;">
+                    <div class="progress-bar bg-info" style="width: {{ character.xp }}%"></div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">生命值 (HP)</label>
+                <div class="hp-bar">
+                    <div class="hp-inner bg-danger" style="width: {{ (character.hp / character.max_hp) * 100 }}%"></div>
+                    <div class="hp-text">{{ character.hp }} / {{ character.max_hp }}</div>
+                </div>
+            </div>
+            <div class="text-center">
+                <h5 class="text-warning">💰 持有金幣: {{ character.gold }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- 怪物戰鬥區域 -->
+    <div class="col-md-8">
+        <div class="card p-4 shadow text-center">
+            {% if monster %}
+                <h3 class="mb-3 text-danger">⚠️ 遭遇強敵：{{ monster.name }}</h3>
+                <div class="mb-4">
+                    <img src="{{ monster.image_path }}" alt="{{ monster.name }}" style="max-width: 200px; filter: drop-shadow(0 0 10px #e94560);">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">怪物血量</label>
+                    <div class="hp-bar" style="height: 35px;">
+                        <div class="hp-inner bg-danger" style="width: {{ (monster.current_hp / monster.monster_max_hp) * 100 }}%"></div>
+                        <div class="hp-text" style="font-size: 1.2rem; top: 5px;">{{ monster.current_hp }} / {{ monster.monster_max_hp }}</div>
+                    </div>
+                </div>
+                <p class="text-muted small">擊敗此怪可獲得 {{ monster.xp_reward }} XP 與 {{ monster.gold_reward }} 金幣</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-primary btn-lg">完成任務發動攻擊！</a>
+                </div>
+            {% else %}
+                <div class="py-5">
+                    <h3>🎉 目前區域暫時安全！</h3>
+                    <p>趕快去建立新的任務，準備迎接下一個挑戰！</p>
+                    <a href="{{ url_for('tasks.new_task') }}" class="btn btn-success">建立新任務</a>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
