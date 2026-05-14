@@ -115,6 +115,59 @@
                     <button type="submit" class="btn btn-primary">接受任務</button>
                 </div>
             </form>
+<div class="row">
+    <!-- 角色資訊欄 -->
+    <div class="col-md-4">
+        <div class="card p-3 shadow">
+            <h4 class="text-center mb-3">勇者狀態</h4>
+            <div class="mb-3">
+                <label class="form-label d-flex justify-content-between">
+                    <span>等級 {{ character.level }}</span>
+                    <span>XP: {{ character.xp }} / 100</span>
+                </label>
+                <div class="progress" style="height: 10px; background-color: #0f3460;">
+                    <div class="progress-bar bg-info" style="width: {{ character.xp }}%"></div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">生命值 (HP)</label>
+                <div class="hp-bar">
+                    <div class="hp-inner bg-danger" style="width: {{ (character.hp / character.max_hp) * 100 }}%"></div>
+                    <div class="hp-text">{{ character.hp }} / {{ character.max_hp }}</div>
+                </div>
+            </div>
+            <div class="text-center">
+                <h5 class="text-warning">💰 持有金幣: {{ character.gold }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- 怪物戰鬥區域 -->
+    <div class="col-md-8">
+        <div class="card p-4 shadow text-center">
+            {% if monster %}
+                <h3 class="mb-3 text-danger">⚠️ 遭遇強敵：{{ monster.name }}</h3>
+                <div class="mb-4">
+                    <img src="{{ monster.image_path }}" alt="{{ monster.name }}" style="max-width: 200px; filter: drop-shadow(0 0 10px #e94560);">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">怪物血量</label>
+                    <div class="hp-bar" style="height: 35px;">
+                        <div class="hp-inner bg-danger" style="width: {{ (monster.current_hp / monster.monster_max_hp) * 100 }}%"></div>
+                        <div class="hp-text" style="font-size: 1.2rem; top: 5px;">{{ monster.current_hp }} / {{ monster.monster_max_hp }}</div>
+                    </div>
+                </div>
+                <p class="text-muted small">擊敗此怪可獲得 {{ monster.xp_reward }} XP 與 {{ monster.gold_reward }} 金幣</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-primary btn-lg">完成任務發動攻擊！</a>
+                </div>
+            {% else %}
+                <div class="py-5">
+                    <h3>🎉 目前區域暫時安全！</h3>
+                    <p>趕快去建立新的任務，準備迎接下一個挑戰！</p>
+                    <a href="{{ url_for('tasks.new_task') }}" class="btn btn-success">建立新任務</a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
