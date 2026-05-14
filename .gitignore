@@ -4,3 +4,20 @@ __pycache__/
 instance/
 .env
 .DS_Store
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Instance folder (database)
+instance/
+
+# Environments
+.venv
+env/
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
