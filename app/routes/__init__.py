@@ -8,3 +8,4 @@ def register_routes(app: Flask):
     """
     app.register_blueprint(auth_bp)
     app.register_blueprint(task_bp)
+# routes package

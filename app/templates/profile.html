@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- 成就牆 -->
+    <div class="col-md-7">
+        <div class="card game-card mb-4 p-4">
+            <h3 class="pixel-font mb-4">ACHIEVEMENTS</h3>
+            <div class="row">
+                {% if unlocked_achievements %}
+                    {% for ach in unlocked_achievements %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded shadow-sm">
+                            <div class="achievement-badge me-3">
+                                🏆
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ ach.name }}</h6>
+                                <small class="text-muted">{{ ach.description }}</small>
+                                <div class="text-info" style="font-size: 0.75rem;">{{ ach.unlocked_at }} 解鎖</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <p>尚未解鎖任何成就。繼續努力打怪吧！</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 排行榜 -->
+    <div class="col-md-5">
+        <div class="card game-card p-4">
+            <h3 class="pixel-font mb-4">LEADERBOARD</h3>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="10%">#</th>
+                        <th>冒險者</th>
+                        <th class="text-end">金幣</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if leaderboard %}
+                        {% for player in leaderboard %}
+                        <tr {% if player.id == session.get('user_id') %}class="table-warning"{% endif %}>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <strong>{{ player.username }}</strong><br>
+                                <small class="text-muted">{{ player.current_title or "新手" }}</small>
+                            </td>
+                            <td class="text-end fw-bold gold-text">{{ player.coins }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">目前暫無排名資料</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            {% if not show_leaderboard %}
+            <div class="text-center mt-3">
+                <a href="{{ url_for('index.leaderboard') }}" class="btn btn-outline-primary btn-sm btn-game">查看完整榜單</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

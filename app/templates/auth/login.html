@@ -27,6 +27,30 @@
                     <span class="text-muted">還沒有帳號嗎？</span>
                     <a href="{{ url_for('auth.register') }}" class="text-decoration-none">立即註冊</a>
                 </div>
+<h2>登入</h2>
+<!-- 登入表單骨架 -->
+<form action="/login" method="POST">
+    <!-- input 欄位 -->
+</form>
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card p-4 shadow">
+            <h2 class="text-center mb-4">登入冒險</h2>
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">使用者名稱</label>
+                    <input type="text" name="username" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">密碼</label>
+                    <input type="password" name="password" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">進入遊戲</button>
+                </div>
+            </form>
+            <div class="mt-3 text-center">
+                <small>還沒有帳號？ <a href="{{ url_for('auth.register') }}" class="text-info">立即註冊</a></small>
             </div>
         </div>
     </div>
