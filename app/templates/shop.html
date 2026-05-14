@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <h2 class="text-warning fw-bold">冒險者商店</h2>
+    <p class="text-muted">用你戰鬥獲得的金幣兌換實體或虛擬獎勵吧！</p>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    <div class="col">
+        <div class="card h-100 p-4 text-center">
+            <i class="bi bi-cup-hot h1 text-info mb-3"></i>
+            <h4>大冒險能量水</h4>
+            <p class="text-muted">（實體獎勵：獎勵自己一杯大杯珍奶）</p>
+            <div class="mt-auto">
+                <button class="btn btn-outline-info w-100" disabled>100 金幣 (開發中)</button>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 p-4 text-center">
+            <i class="bi bi-controller h1 text-warning mb-3"></i>
+            <h4>虛空穿梭券</h4>
+            <p class="text-muted">（實體獎勵：玩一小時遊戲）</p>
+            <div class="mt-auto">
+                <button class="btn btn-outline-warning w-100" disabled>50 金幣 (開發中)</button>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 p-4 text-center">
+            <i class="bi bi-stars h1 text-danger mb-3"></i>
+            <h4>璀璨頭像框</h4>
+            <p class="text-muted">（虛擬獎勵：解鎖限定頭像外框）</p>
+            <div class="mt-auto">
+                <button class="btn btn-outline-danger w-100" disabled>200 金幣 (開發中)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-5">
+    <a href="{{ url_for('combat.index') }}" class="btn btn-secondary">返回戰場</a>
+</div>
+{% endblock %}
