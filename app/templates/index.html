@@ -1,6 +1,86 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="row">
+    <!-- 左側：個人狀態 -->
+    <div class="col-md-4">
+        <div class="card game-card mb-4 text-center p-3">
+            <div class="mb-3">
+                <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed={{ user.username }}" alt="avatar" class="img-fluid rounded-circle" style="width: 100px; background-color: #ecf0f1;">
+            </div>
+            <h4 class="pixel-font">{{ user.username }}</h4>
+            <p class="badge bg-info p-2">{{ user.current_title or "新手冒險者" }}</p>
+            <div class="d-flex justify-content-around mt-2">
+                <div>
+                    <small class="text-muted d-block">金幣</small>
+                    <span class="fw-bold gold-text">💰 {{ user.coins }}</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block">完成度</small>
+                    <span class="fw-bold text-success">📈 {{ completed_tasks }}/{{ total_tasks }}</span>
+                </div>
+            </div>
+            <div class="progress mt-3" style="height: 10px;">
+                {% set percent = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0 %}
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ percent }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右側：任務列表 -->
+    <div class="col-md-8">
+        <!-- 新增任務表單 -->
+        <div class="card game-card mb-4">
+            <div class="card-body">
+                <form action="{{ url_for('task.add_task') }}" method="POST" class="d-flex gap-2">
+                    <input type="text" name="title" class="form-control" placeholder="今天想挑戰什麼怪物 (新增任務)？" required>
+                    <button type="submit" class="btn btn-primary btn-game text-nowrap">召喚任務</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 任務列表 -->
+        <h5 class="pixel-font mb-3">ACTIVE QUESTS</h5>
+        {% for task in tasks %}
+            {% if task.status == 'pending' %}
+            <div class="card game-card mb-2">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary me-2">LV.1</span>
+                        <span class="fw-bold">{{ task.title }}</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <form action="{{ url_for('task.complete_task', task_id=task.id) }}" method="POST">
+                            <button type="submit" class="btn btn-success btn-sm btn-game">擊敗它 (完成)</button>
+                        </form>
+                        <form action="{{ url_for('task.delete_task', task_id=task.id) }}" method="POST">
+                            <button type="submit" class="btn btn-outline-danger btn-sm btn-game">逃跑 (刪除)</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        <h5 class="pixel-font mt-4 mb-3 text-muted">COMPLETED</h5>
+        {% for task in tasks %}
+            {% if task.status == 'completed' %}
+            <div class="card game-card mb-2 opacity-75 grayscale">
+                <div class="card-body d-flex justify-content-between align-items-center bg-light">
+                    <div class="text-decoration-line-through text-muted">
+                        {{ task.title }}
+                    </div>
+                    <span class="badge bg-success">已擊敗</span>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        {% if total_tasks == 0 %}
+        <div class="text-center mt-5 text-muted">
+            <p>目前沒有任務，快去召喚一些怪物吧！</p>
+        </div>
+        {% endif %}
 <h2>遊戲主畫面</h2>
 <!-- 顯示怪物狀態 (圖片、血條) -->
 
