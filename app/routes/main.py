@@ -1,95 +1,125 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, flash, session
+from app.models.user import User
+from app.models.task import Task
+from app.models.monster import UserMonsterInstance
+from app.models.item import Item
+from app.models.achievement import Achievement
+from functools import wraps
 
 main_bp = Blueprint('main', __name__)
 
-@main_bp.route('/', methods=['GET'])
-def index():
-    """
-    渲染首頁（遊戲主畫面）。
-    - 需檢查是否已登入
-    - 取得使用者狀態、當前怪物狀態與未完成的任務列表
-    """
-    pass
-
-@main_bp.route('/stats', methods=['GET'])
-def stats():
-    """
-    渲染個人數據統計頁面。
-    - 顯示等級、經驗值與歷史成就
-    """
-    pass
-from flask import Blueprint, render_template, request, redirect, url_for, session
-from flask import Blueprint, render_template, session, redirect, url_for
-from ..models.character import Character
-from ..models.monster import UserMonsterInstance
-
-main_bp = Blueprint('main', __name__)
+def login_required(view):
+    """登入驗證裝飾器"""
+    @wraps(view)
+    def wrapped_view(**kwargs):
+        if 'user_id' not in session:
+            flash('請先登入後再進行此操作！', 'warning')
+            return redirect(url_for('auth.login'))
+        return view(**kwargs)
+    return wrapped_view
 
 @main_bp.route('/')
+@login_required
 def index():
-    """
-    首頁：顯示任務清單、角色狀態與怪物狀態。
-    需確認使用者已登入。
-    """
-    pass
+    """首頁 / 遊戲大廳"""
+    user_id = session['user_id']
+    
+    # 1. 獲取使用者資訊 (包含角色等級、經驗值、金幣等)
+    user = User.get_by_id(user_id)
+    if not user:
+        # 防呆，如果 session 存在但 DB 中無此人，清除 session 回登入頁
+        session.clear()
+        return redirect(url_for('auth.login'))
 
-@main_bp.route('/task/new', methods=['GET'])
-def task_new():
-    """顯示新增任務表單。"""
-    pass
+    # 2. 獲取當前遭遇怪物。若無，則自動為其遭遇一隻
+    monster = UserMonsterInstance.get_current_for_user(user_id)
+    if not monster:
+        UserMonsterInstance.spawn_for_user(user_id)
+        monster = UserMonsterInstance.get_current_for_user(user_id)
 
-@main_bp.route('/task/add', methods=['POST'])
-def task_add():
-    """接收表單資料，呼叫 TaskModel 建立任務。"""
-    pass
+    # 3. 獲取當前裝備的武器
+    equipped_weapon = Item.get_equipped_weapon(user_id)
 
-@main_bp.route('/task/edit/<int:id>', methods=['GET'])
-def task_edit(id):
-    """顯示編輯任務表單，載入既有資料。"""
-    pass
+    # 4. 獲取使用者的所有冒險任務
+    tasks = Task.get_by_user(user_id)
+    
+    # 5. 計算任務進度與完成度
+    total_tasks = len(tasks)
+    completed_tasks = len([t for t in tasks if t['status'] == 'completed'])
 
-@main_bp.route('/task/update/<int:id>', methods=['POST'])
-def task_update(id):
-    """接收更新資料，呼叫 TaskModel 更新任務。"""
-    pass
-
-@main_bp.route('/task/delete/<int:id>', methods=['POST'])
-def task_delete(id):
-    """呼叫 TaskModel 刪除任務。"""
-    pass
-
-@main_bp.route('/task/complete/<int:id>', methods=['POST'])
-def task_complete(id):
-    """
-    標記任務完成，並計算獎勵與打怪傷害。
-    更新 Task 狀態與 User 狀態。
-    """
-    pass
+    return render_template(
+        'index.html', 
+        user=user, 
+        monster=monster, 
+        equipped_weapon=equipped_weapon,
+        tasks=tasks, 
+        total_tasks=total_tasks, 
+        completed_tasks=completed_tasks
+    )
 
 @main_bp.route('/shop')
+@login_required
 def shop():
-    """顯示商城頁面與道具清單。"""
-    pass
-
-@main_bp.route('/shop/buy/<int:id>', methods=['POST'])
-def buy_item(id):
-    """處理購買邏輯：檢查金幣、扣款、加入背包。"""
-    pass
-
-@main_bp.route('/stats')
-def stats():
-    """顯示數據統計圖表頁面。"""
-    pass
-    遊戲主首頁。
-    顯示：
-    1. 角色數值 (HP, Level, XP, Gold)
-    2. 當前怪物資訊 (血量、圖片)
-    """
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-        
+    """裝備商店與玩家背包"""
     user_id = session['user_id']
-    character = Character.get_by_user_id(user_id)
-    monster_instance = UserMonsterInstance.get_current_for_user(user_id)
     
-    return render_template('index.html', character=character, monster=monster_instance)
+    user = User.get_by_id(user_id)
+    items = Item.get_all()
+    user_items = Item.get_user_items(user_id)
+    
+    return render_template(
+        'shop.html',
+        user=user,
+        items=items,
+        user_items=user_items
+    )
+
+@main_bp.route('/shop/buy/<int:item_id>', methods=['POST'])
+@login_required
+def buy_item(item_id):
+    """玩家購買裝備商品"""
+    user_id = session['user_id']
+    
+    success, message = Item.buy_item(user_id, item_id)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'danger')
+        
+    return redirect(url_for('main.shop'))
+
+@main_bp.route('/shop/equip/<int:user_item_id>', methods=['POST'])
+@login_required
+def equip_item(user_item_id):
+    """玩家裝備背包中的道具"""
+    user_id = session['user_id']
+    
+    success, message = Item.equip_item(user_id, user_item_id)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'danger')
+        
+    return redirect(url_for('main.shop'))
+
+@main_bp.route('/profile')
+@login_required
+def profile():
+    """個人資料、成就牆與排行榜"""
+    user_id = session['user_id']
+    
+    user = User.get_by_id(user_id)
+    achievements = Achievement.get_all()
+    unlocked_achievements = Achievement.get_unlocked_by_user(user_id)
+    leaderboard = User.get_all()  # 依金幣/等級排序
+    
+    # 整理已解鎖成就的 ID 方便在範本中判斷亮起狀態
+    unlocked_ids = {a['id'] for a in unlocked_achievements}
+    
+    return render_template(
+        'profile.html',
+        user=user,
+        achievements=achievements,
+        unlocked_ids=unlocked_ids,
+        leaderboard=leaderboard
+    )

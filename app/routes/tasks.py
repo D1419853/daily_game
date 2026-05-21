@@ -1,207 +1,142 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, request, redirect, url_for, flash, session
+from app.models.task import Task
+from app.models.monster import UserMonsterInstance
+from app.models.item import Item
+from app.models.user import User
+from app.models.achievement import Achievement
+from functools import wraps
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
-@tasks_bp.route('/', methods=['GET'])
-def list_tasks():
-    """渲染使用者的所有任務列表"""
-    pass
+def login_required(view):
+    """登入驗證裝飾器"""
+    @wraps(view)
+    def wrapped_view(**kwargs):
+        if 'user_id' not in session:
+            flash('請先登入後再進行此操作！', 'warning')
+            return redirect(url_for('auth.login'))
+        return view(**kwargs)
+    return wrapped_view
 
-@tasks_bp.route('/new', methods=['GET'])
-def new_task_page():
-    """渲染新增任務表單頁面"""
-    pass
-
-@tasks_bp.route('/', methods=['POST'])
-def create_task():
-    """處理建立任務邏輯，將資料存入 DB，重導向至 /tasks"""
-    pass
-
-@tasks_bp.route('/<int:task_id>/edit', methods=['GET'])
-def edit_task_page(task_id):
-    """渲染編輯特定任務的表單頁面"""
-    pass
-
-@tasks_bp.route('/<int:task_id>/update', methods=['POST'])
-def update_task(task_id):
-    """處理更新任務邏輯，更新 DB，重導向至 /tasks"""
-    pass
-
-@tasks_bp.route('/<int:task_id>/delete', methods=['POST'])
-def delete_task(task_id):
-    """處理刪除任務邏輯，重導向至 /tasks"""
-    pass
-
-@tasks_bp.route('/<int:task_id>/complete', methods=['POST'])
-def complete_task(task_id):
-    """
-    處理任務完成邏輯：
-    1. 將任務狀態標記為完成
-    2. 扣除當前怪物血量
-    3. 結算使用者經驗值並判斷升級
-    處理完畢後重導向回首頁，並提示成功訊息。
-    """
-    pass
-from flask import Blueprint, render_template, redirect, url_for, request, flash, session
-
-tasks_bp = Blueprint('tasks', __name__)
-
-@tasks_bp.route('/tasks/add', methods=['POST'])
+@tasks_bp.route('/add', methods=['POST'])
+@login_required
 def add_task():
-    user_id = session.get('user_id')
-    if not user_id: return redirect(url_for('auth.login'))
-    
-    title = request.form['title']
-    difficulty = int(request.form['difficulty'])
-    
-    from app.models.task import Task
-    Task.create(user_id, title, difficulty)
-    flash(f'任務「{title}」已發佈！', 'info')
-    return redirect(url_for('combat.index'))
-
-@tasks_bp.route('/tasks/edit/<int:task_id>', methods=['GET'])
-def edit_task_page(task_id):
-    """
-    顯示編輯任務頁面。
-    """
-    pass
-
-@tasks_bp.route('/tasks/update/<int:task_id>', methods=['POST'])
-def update_task(task_id):
-    """
-    更新任務內容。
-    """
-    pass
-
-@tasks_bp.route('/tasks/delete/<int:task_id>', methods=['POST'])
-def delete_task(task_id):
-    from app.models.task import Task
-    Task.delete(task_id)
-    flash('任務已撤回。', 'secondary')
-    return redirect(url_for('combat.index'))
-
-@tasks_bp.route('/tasks/complete/<int:task_id>', methods=['POST'])
-def complete_task(task_id):
-    user_id = session.get('user_id')
-    if not user_id: return redirect(url_for('auth.login'))
-    
-    from app.models.task import Task
-    from app.models.monster import Monster
-    from app.models.user import User
-    
-    task = Task.get_by_id(task_id)
-    if task and task['status'] == 'pending':
-        # 1. 標記任務完成
-        Task.complete(task_id)
-        
-        # 2. 計算傷害 (1:10, 2:30, 3:50)
-        damage_map = {1: 10, 2: 30, 3: 50}
-        damage = damage_map.get(task['difficulty'], 10)
-        
-        # 3. 扣除怪物 HP
-        monster = Monster.get_current_for_user(user_id)
-        if monster:
-            res = Monster.take_damage(monster['id'], damage)
-            flash(f'任務完成！對 {monster["name"]} 造成了 {damage} 點傷害！', 'success')
-            
-            # 4. 檢查怪物是否死亡
-            if res['is_alive'] == 0:
-                # 給予獎勵 (簡單怪物給 20 exp, 10 gold)
-                exp_gain = 20
-                gold_gain = 10
-                User.update_progress(user_id, exp_gain, gold_gain)
-                flash(f'擊敗了 {monster["name"]}！獲得 {exp_gain} EXP 與 {gold_gain} 金幣！', 'warning')
-                # 生成新怪物
-                Monster.spawn_for_user(user_id)
-                
-    return redirect(url_for('combat.index'))
-from flask import Blueprint, render_template, request, redirect, url_for, session
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from ..models.task import Task
-from ..models.character import Character
-from ..models.monster import UserMonsterInstance, Monster
-import random
-
-tasks_bp = Blueprint('tasks', __name__)
-
-@tasks_bp.route('/tasks')
-def list_tasks():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-    tasks = Task.get_all_by_user(session['user_id'])
-    return render_template('tasks/list.html', tasks=tasks)
-
-@tasks_bp.route('/tasks/new', methods=['GET'])
-def new_task():
-    return render_template('tasks/new.html')
-
-@tasks_bp.route('/tasks', methods=['POST'])
-def create_task():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-        
-    title = request.form.get('title')
-    description = request.form.get('description')
-    difficulty = int(request.form.get('difficulty', 1))
-    
-    if not title:
-        flash('任務標題不能為空')
-        return redirect(url_for('tasks.new_task'))
-        
-    Task.create(session['user_id'], title, description, difficulty)
-    flash('任務建立成功！')
-    return redirect(url_for('tasks.list_tasks'))
-
-@tasks_bp.route('/tasks/<int:task_id>/complete', methods=['POST'])
-def complete_task(task_id):
-    """
-    完成任務並對怪物造成傷害。
-    """
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-        
+    """發佈新的冒險任務"""
     user_id = session['user_id']
-    task = Task.get_by_id(task_id)
+    title = request.form.get('title')
+    description = request.form.get('description', '')
+    difficulty = request.form.get('difficulty', 1)
     
-    if not task or task['user_id'] != user_id:
-        flash('找不到該任務')
-        return redirect(url_for('tasks.list_tasks'))
+    try:
+        difficulty = int(difficulty)
+    except ValueError:
+        difficulty = 1
+
+    if not title:
+        flash('任務名稱不能為空', 'danger')
+        return redirect(url_for('main.index'))
+
+    task_id = Task.create(user_id, title, description, difficulty)
+    if task_id:
+        flash('冒險任務發佈成功！一隻新的怪物被召喚了 👾。', 'success')
+    else:
+        flash('任務發佈失敗，請重試', 'danger')
         
-    if task['is_completed']:
-        flash('任務已經完成過了')
-        return redirect(url_for('tasks.list_tasks'))
-        
-    # 1. 更新任務狀態
-    Task.update_status(task_id, True)
-    
-    # 2. 計算傷害 (難度越高傷害越高)
-    damage = task['difficulty'] * 20
-    
-    # 3. 對怪物造成傷害
-    success, is_dead = UserMonsterInstance.damage_monster(user_id, damage)
-    
-    if success:
-        # 4. 發放獎勵
-        xp_gain = task['difficulty'] * 10
-        gold_gain = task['difficulty'] * 5
-        Character.add_rewards(user_id, xp_gain, gold_gain)
-        
-        flash(f'任務完成！造成 {damage} 點傷害，獲得 {xp_gain} 經驗值與 {gold_gain} 金幣！')
-        
-        # 5. 若怪物死亡，產生下一隻
-        if is_dead:
-            flash('太棒了！你擊敗了怪物！下一隻強敵出現了！')
-            # 隨機挑選下一隻怪物範本
-            all_monsters = Monster.get_all()
-            next_monster = random.choice(all_monsters)
-            UserMonsterInstance.create(user_id, next_monster['id'])
-            
     return redirect(url_for('main.index'))
 
-@tasks_bp.route('/tasks/<int:task_id>/delete', methods=['POST'])
+@tasks_bp.route('/delete/<int:task_id>', methods=['POST'])
+@login_required
 def delete_task(task_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-    Task.delete(task_id)
-    flash('任務已刪除')
-    return redirect(url_for('tasks.list_tasks'))
+    """撤回/刪除任務"""
+    user_id = session['user_id']
+    task = Task.get_by_id(task_id)
+
+    if not task or task['user_id'] != user_id:
+        flash('找不到該任務或您無權限操作', 'danger')
+        return redirect(url_for('main.index'))
+
+    if Task.delete(task_id):
+        flash('任務已成功撤回。', 'info')
+    else:
+        flash('任務刪除失敗', 'danger')
+
+    return redirect(url_for('main.index'))
+
+@tasks_bp.route('/complete/<int:task_id>', methods=['POST'])
+@login_required
+def complete_task(task_id):
+    """完成任務並攻擊怪物"""
+    user_id = session['user_id']
+    task = Task.get_by_id(task_id)
+
+    if not task or task['user_id'] != user_id:
+        flash('無效的任務操作', 'danger')
+        return redirect(url_for('main.index'))
+
+    if task['status'] == 'completed':
+        flash('該任務已經完成過了！', 'warning')
+        return redirect(url_for('main.index'))
+
+    # 1. 標記任務為已完成
+    Task.mark_completed(task_id)
+
+    # 2. 計算傷害
+    # 簡單: 15, 普通: 35, 困難: 60
+    damage_map = {1: 15, 2: 35, 3: 60}
+    base_damage = damage_map.get(task['difficulty'], 15)
+    
+    # 檢查是否穿戴武器
+    equipped_weapon = Item.get_equipped_weapon(user_id)
+    weapon_bonus = equipped_weapon['bonus_stat'] if equipped_weapon else 0
+    total_damage = base_damage + weapon_bonus
+
+    # 3. 取得當前怪物，並造成傷害
+    monster = UserMonsterInstance.get_current_for_user(user_id)
+    if not monster:
+        # 若沒有怪物，先防呆遭遇一隻
+        UserMonsterInstance.spawn_for_user(user_id)
+        monster = UserMonsterInstance.get_current_for_user(user_id)
+
+    success, is_dead = UserMonsterInstance.damage_monster(user_id, total_damage)
+    
+    if success:
+        if is_dead:
+            # 怪物死亡！發放獎勵
+            xp_reward = monster['xp_reward']
+            gold_reward = monster['gold_reward']
+            res = User.add_rewards(user_id, xp_reward, gold_reward)
+            
+            # 生成新怪物
+            UserMonsterInstance.spawn_for_user(user_id)
+            
+            flash(f"⚔️ 任務完成！對 {monster['name']} 造成 {total_damage} 點致命一擊！", 'success')
+            flash(f"🎉 成功擊敗 {monster['name']}！獲得 {xp_reward} EXP 與 🪙 {gold_reward} 金幣！", 'success')
+            
+            if res and res.get('leveled_up'):
+                flash(f"🌟 恭喜升級！您已達到了等級 {res['new_level']}！", 'info')
+
+            # 4. 檢查成就解鎖
+            all_achievements = Achievement.get_all()
+            unlocked = Achievement.get_unlocked_by_user(user_id)
+            unlocked_ids = {a['id'] for a in unlocked}
+            
+            user_tasks = Task.get_by_user(user_id)
+            completed_count = len([t for t in user_tasks if t['status'] == 'completed'])
+            
+            for ach in all_achievements:
+                if ach['id'] not in unlocked_ids:
+                    if ach['requirement_type'] == 'task_completed' and completed_count >= ach['requirement_count']:
+                        # 解鎖成就
+                        Achievement.unlock(user_id, ach['id'])
+                        # 發放成就額外金幣
+                        User.add_rewards(user_id, 0, ach['reward_coins'])
+                        # 更新頭銜
+                        User.update_character(user_id, current_title=ach['reward_title'])
+                        flash(f"🏆 解鎖成就：{ach['name']}！獲得 🪙 {ach['reward_coins']} 金幣與稱號「{ach['reward_title']}」！", 'gold')
+        else:
+            # 怪物沒死，普通傷害
+            flash(f"⚔️ 任務完成！對 {monster['name']} 造成 {total_damage} 點傷害！(HP: {max(0, monster['current_hp'] - total_damage)}/{monster['max_hp']})", 'success')
+    else:
+        flash('攻擊失敗，系統錯誤', 'danger')
+
+    return redirect(url_for('main.index'))

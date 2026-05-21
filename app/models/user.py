@@ -1,312 +1,161 @@
-from app.models.db import get_db_connection
+from app.models.database import get_db_connection
+import sqlite3
 
 class User:
     @staticmethod
     def create(username, password_hash):
+        """建立新使用者並同時初始化勇者角色"""
         conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-            (username, password_hash)
-        )
-        conn.commit()
-        user_id = cursor.lastrowid
-        conn.close()
-        return user_id
+        try:
+            cursor = conn.cursor()
+            # 1. 插入使用者帳號
+            cursor.execute(
+                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                (username, password_hash)
+            )
+            user_id = cursor.lastrowid
+            
+            # 2. 初始化勇者角色屬性
+            cursor.execute(
+                "INSERT INTO characters (user_id, level, xp, gold, current_title) VALUES (?, 1, 0, 0, '新手冒險者')",
+                (user_id,)
+            )
+            
+            conn.commit()
+            return user_id
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            conn.rollback()
+            return None
+        finally:
+            conn.close()
 
     @staticmethod
     def get_by_id(user_id):
+        """取得單一勇者及其角色狀態"""
         conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        conn.close()
-        return dict(user) if user else None
+        try:
+            query = """
+                SELECT u.id, u.username, c.level, c.xp, c.gold, c.current_title, u.created_at
+                FROM users u
+                JOIN characters c ON u.id = c.user_id
+                WHERE u.id = ?
+            """
+            user = conn.execute(query, (user_id,)).fetchone()
+            return dict(user) if user else None
+        except Exception as e:
+            print(f"Error getting user by id: {e}")
+            return None
+        finally:
+            conn.close()
 
     @staticmethod
     def get_by_username(username):
+        """僅取得帳密資訊以供登入驗證"""
         conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-        conn.close()
-        return dict(user) if user else None
-
-    @staticmethod
-    def update_stats(user_id, exp_gain):
-        conn = get_db_connection()
-        user = conn.execute("SELECT level, exp FROM users WHERE id = ?", (user_id,)).fetchone()
-        if user:
-            # 簡單升級邏輯：每 100 經驗值升 1 級
-            new_exp = user['exp'] + exp_gain
-            new_level = user['level'] + (new_exp // 100)
-            new_exp = new_exp % 100
-            
-            conn.execute(
-                "UPDATE users SET exp = ?, level = ? WHERE id = ?",
-                (new_exp, new_level, user_id)
-            )
-            conn.commit()
-        conn.close()
-import sqlite3
-import os
-from flask import current_app
-
-def get_db_connection():
-    """建立與 SQLite 資料庫的連線"""
-    db_path = os.path.join(current_app.instance_path, 'database.db')
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-class User:
-    """使用者模型，處理玩家帳號與屬性"""
-
-    @staticmethod
-    def create(username, email, password_hash):
-        """建立新使用者"""
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-                (username, email, password_hash)
-            )
-            conn.commit()
-            user_id = cursor.lastrowid
-            conn.close()
-            return user_id
+            user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+            return dict(user) if user else None
         except Exception as e:
-from datetime import datetime
-
-class UserModel:
-    def __init__(self, db_path):
-        self.db_path = db_path
-
-    def create(self, username, password_hash):
-        query = """
-        INSERT INTO users (username, password_hash)
-        VALUES (?, ?)
-        """
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute(query, (username, password_hash))
-                conn.commit()
-                return cursor.lastrowid
-        except sqlite3.IntegrityError:
+            print(f"Error getting user by username: {e}")
             return None
-
-    def get_by_id(self, user_id):
-        query = "SELECT * FROM users WHERE id = ?"
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(query, (user_id,))
-            return cursor.fetchone()
-
-    def get_by_username(self, username):
-        query = "SELECT * FROM users WHERE username = ?"
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(query, (username,))
-            return cursor.fetchone()
-
-    def update_stats(self, user_id, exp, gold, level, current_hp, max_hp):
-        query = """
-        UPDATE users 
-        SET experience = ?, gold = ?, level = ?, current_monster_hp = ?, max_monster_hp = ?
-        WHERE id = ?
-        """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, (exp, gold, level, current_hp, max_hp, user_id))
-            conn.commit()
-
-    def delete(self, user_id):
-        query = "DELETE FROM users WHERE id = ?"
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, (user_id,))
-            conn.commit()
-from app.models.base import get_db_connection
-from werkzeug.security import generate_password_hash, check_password_hash
-
-class User:
-    @staticmethod
-    def create(username, password):
-        conn = get_db_connection()
-        password_hash = generate_password_hash(password)
-        try:
-            conn.execute(
-                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                (username, password_hash)
-            )
-            conn.commit()
-            return True
-        except Exception:
-            return False
         finally:
             conn.close()
-from .db import get_db_connection
-import sqlite3
-
-class User:
-    def __init__(self, id, username, password_hash):
-        self.id = id
-        self.username = username
-        self.password_hash = password_hash
-
-    @staticmethod
-    def create(username, password_hash):
-        """
-        新增一位使用者。
-        :param username: 使用者名稱
-        :param password_hash: 加密後的密碼
-        :return: 新建立的使用者 ID
-        """
-        try:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute(
-                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                (username, password_hash)
-            )
-            user_id = cur.lastrowid
-            conn.commit()
-            conn.close()
-            return user_id
-        except sqlite3.Error as e:
-            print(f"Error creating user: {e}")
-            return None
 
     @staticmethod
     def get_all():
-        """取得所有使用者"""
+        """取得所有勇者列表 (用於排行榜)"""
+        conn = get_db_connection()
         try:
-            conn = get_db_connection()
-            users = conn.execute('SELECT * FROM users').fetchall()
-            conn.close()
-            return users
+            query = """
+                SELECT u.id, u.username, c.level, c.xp, c.gold, c.current_title
+                FROM users u
+                JOIN characters c ON u.id = c.user_id
+                ORDER BY c.gold DESC, c.level DESC
+            """
+            users = conn.execute(query).fetchall()
+            return [dict(u) for u in users]
         except Exception as e:
-            print(f"Error getting users: {e}")
+            print(f"Error getting all users: {e}")
             return []
-
-    @staticmethod
-    def get_by_id(user_id):
-        """根據 ID 取得單一使用者"""
-        try:
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        finally:
             conn.close()
-            return user
-        except Exception as e:
-            print(f"Error getting user by id: {e}")
-            return None
 
     @staticmethod
-    def get_by_email(email):
-        """根據 Email 取得單一使用者"""
+    def update_character(user_id, gold=None, xp=None, level=None, current_title=None):
+        """彈性更新勇者屬性"""
+        conn = get_db_connection()
         try:
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
-            conn.close()
-            return user
-        except Exception as e:
-            print(f"Error getting user by email: {e}")
-            return None
-
-    @staticmethod
-    def update(user_id, coins=None, current_title=None):
-        """更新使用者金幣或稱號"""
-        try:
-            conn = get_db_connection()
-            if coins is not None and current_title is not None:
-                conn.execute('UPDATE users SET coins = ?, current_title = ? WHERE id = ?', (coins, current_title, user_id))
-            elif coins is not None:
-                conn.execute('UPDATE users SET coins = ? WHERE id = ?', (coins, user_id))
-            elif current_title is not None:
-                conn.execute('UPDATE users SET current_title = ? WHERE id = ?', (current_title, user_id))
+            updates = []
+            values = []
+            if gold is not None:
+                updates.append("gold = ?")
+                values.append(gold)
+            if xp is not None:
+                updates.append("xp = ?")
+                values.append(xp)
+            if level is not None:
+                updates.append("level = ?")
+                values.append(level)
+            if current_title is not None:
+                updates.append("current_title = ?")
+                values.append(current_title)
+                
+            if not updates:
+                return False
+                
+            values.append(user_id)
+            query = f"UPDATE characters SET {', '.join(updates)} WHERE user_id = ?"
+            conn.execute(query, values)
             conn.commit()
-            conn.close()
             return True
         except Exception as e:
-            print(f"Error updating user: {e}")
-    def get_by_username(username):
-        """
-        根據使用者名稱取得使用者資料。
-        """
-        try:
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+            print(f"Error updating character: {e}")
+            conn.rollback()
+            return False
+        finally:
             conn.close()
-            return user
-        except sqlite3.Error as e:
-            print(f"Error getting user by username: {e}")
-            return None
 
     @staticmethod
-    def get_by_id(user_id):
+    def add_rewards(user_id, xp_gain, gold_gain):
+        """給予經驗值與金幣獎勵，並處理升級邏輯"""
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        conn.close()
-        return user
-
-    @staticmethod
-    def update_progress(user_id, exp_gain, gold_gain):
-        conn = get_db_connection()
-        user = conn.execute('SELECT level, exp FROM users WHERE id = ?', (user_id,)).fetchone()
-        if user:
-            new_exp = user['exp'] + exp_gain
-            new_level = user['level']
-            # Simple level up logic: 100 exp per level
-            while new_exp >= 100:
-                new_exp -= 100
-                new_level += 1
+        try:
+            cursor = conn.cursor()
+            # 1. 取得當前屬性
+            cursor.execute("SELECT level, xp, gold FROM characters WHERE user_id = ?", (user_id,))
+            char = cursor.fetchone()
+            if not char:
+                return False
+                
+            current_level = char['level']
+            current_xp = char['xp']
+            current_gold = char['gold']
             
-            conn.execute(
-                'UPDATE users SET level = ?, exp = ?, gold = gold + ? WHERE id = ?',
-                (new_level, new_exp, gold_gain, user_id)
+            # 2. 計算新數值
+            new_xp = current_xp + xp_gain
+            new_gold = current_gold + gold_gain
+            new_level = current_level
+            
+            # 3. 升級邏輯：每級所需經驗值為 level * 100
+            xp_required = new_level * 100
+            leveled_up = False
+            while new_xp >= xp_required:
+                new_xp -= xp_required
+                new_level += 1
+                xp_required = new_level * 100
+                leveled_up = True
+                
+            # 4. 更新資料庫
+            cursor.execute(
+                "UPDATE characters SET level = ?, xp = ?, gold = ? WHERE user_id = ?",
+                (new_level, new_xp, new_gold, user_id)
             )
             conn.commit()
-        conn.close()
-        """
-        根據 ID 取得使用者資料。
-        """
-        try:
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-            conn.close()
-            return user
-        except sqlite3.Error as e:
-            print(f"Error getting user by id: {e}")
-            return None
-
-    @staticmethod
-    def update_password(user_id, new_password_hash):
-        """
-        更新使用者密碼。
-        """
-        try:
-            conn = get_db_connection()
-            conn.execute('UPDATE users SET password_hash = ? WHERE id = ?', (new_password_hash, user_id))
-            conn.commit()
-            conn.close()
-            return True
-        except sqlite3.Error as e:
-            print(f"Error updating password: {e}")
-            return False
-
-    @staticmethod
-    def delete(user_id):
-        """刪除使用者"""
-        """
-        刪除使用者。
-        """
-        try:
-            conn = get_db_connection()
-            conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
-            conn.commit()
-            conn.close()
-            return True
+            return {"leveled_up": leveled_up, "new_level": new_level, "xp_gain": xp_gain, "gold_gain": gold_gain}
         except Exception as e:
-        except sqlite3.Error as e:
-            print(f"Error deleting user: {e}")
+            print(f"Error adding rewards: {e}")
+            conn.rollback()
             return False
+        finally:
+            conn.close()

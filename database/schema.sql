@@ -1,193 +1,32 @@
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    level INTEGER NOT NULL DEFAULT 1,
-    exp INTEGER NOT NULL DEFAULT 0,
-    coins INTEGER NOT NULL DEFAULT 0,
-    last_login_date TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-    username TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    coins INTEGER DEFAULT 0,
-    current_title TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- 資料庫建表語法 (SQLite)
-
--- 1. 使用者表
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    level INTEGER NOT NULL DEFAULT 1,
-    experience INTEGER NOT NULL DEFAULT 0,
-    gold INTEGER NOT NULL DEFAULT 0,
-    current_monster_hp INTEGER NOT NULL DEFAULT 100,
-    max_monster_hp INTEGER NOT NULL DEFAULT 100,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2. 任務表
--- 使用者表
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    level INTEGER DEFAULT 1,
-    exp INTEGER DEFAULT 0,
-    title TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-    gold INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- 任務表
--- 生活目標加打怪系統 資料庫建表語法 (SQLite)
-
 -- 1. 使用者表
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. 角色數值表
+-- 2. 勇者角色狀態表 (與 users 連動)
 CREATE TABLE IF NOT EXISTS characters (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL UNIQUE,
     level INTEGER DEFAULT 1,
     xp INTEGER DEFAULT 0,
     gold INTEGER DEFAULT 0,
-    hp INTEGER DEFAULT 100,
-    max_hp INTEGER DEFAULT 100,
+    current_title TEXT DEFAULT '新手冒險者',
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
--- 3. 任務清單表
+-- 3. 冒險任務表
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
-    target INTEGER NOT NULL DEFAULT 1,
-    progress INTEGER NOT NULL DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'pending',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-    status TEXT DEFAULT 'pending',
+    difficulty INTEGER NOT NULL DEFAULT 1, -- 1 (Easy), 2 (Normal), 3 (Hard)
+    status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'completed'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS achievements (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    requirement_type TEXT,
-    requirement_count INTEGER,
-    reward_coins INTEGER DEFAULT 0,
-    reward_title TEXT
-);
-
-CREATE TABLE IF NOT EXISTS user_achievements (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    achievement_id INTEGER NOT NULL,
-    unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(achievement_id) REFERENCES achievements(id)
-);
-    description TEXT,
-    status TEXT DEFAULT 'pending',
-    exp_reward INTEGER DEFAULT 10,
-    damage INTEGER DEFAULT 10,
-    category TEXT,
-    status TEXT NOT NULL DEFAULT 'todo', -- todo, done
-    difficulty INTEGER NOT NULL DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- 3. 道具表
-CREATE TABLE IF NOT EXISTS items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    price INTEGER NOT NULL,
-    type TEXT NOT NULL, -- weapon, armor
-    bonus_stat INTEGER NOT NULL DEFAULT 0
-);
-
--- 4. 使用者道具關聯表 (背包)
-CREATE TABLE IF NOT EXISTS user_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    item_id INTEGER NOT NULL,
-    is_equipped BOOLEAN NOT NULL DEFAULT 0,
-    acquired_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
-);
-
--- 預填一些基本道具
-INSERT INTO items (name, description, price, type, bonus_stat) VALUES 
-('新手木劍', '一把基礎的木劍，增加 5 點傷害。', 50, 'weapon', 5),
-('鐵劍', '鋒利的鐵劍，增加 15 點傷害。', 200, 'weapon', 15),
-('布衣', '輕便的布衣，讓你在冒險中更舒適。', 30, 'armor', 2),
-('皮甲', '提供基本防護的皮甲。', 150, 'armor', 8);
-    difficulty INTEGER DEFAULT 1,
-    status TEXT DEFAULT 'pending',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id)
-);
-
-CREATE TABLE IF NOT EXISTS monsters (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    max_hp INTEGER NOT NULL,
-    current_hp INTEGER NOT NULL,
-    image_path TEXT,
-    is_active INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
--- 怪物表
-CREATE TABLE IF NOT EXISTS monsters (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    name TEXT NOT NULL,
-    monster_type TEXT NOT NULL,
-    max_hp INTEGER NOT NULL,
-    current_hp INTEGER NOT NULL,
-    image_url TEXT,
-    is_alive INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id)
-);
-
--- 戰鬥日誌
-CREATE TABLE IF NOT EXISTS combat_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    action_text TEXT NOT NULL,
-    damage_dealt INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id)
-);
-    description TEXT,
-    difficulty INTEGER DEFAULT 1,
-    is_completed BOOLEAN DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
@@ -201,18 +40,78 @@ CREATE TABLE IF NOT EXISTS monsters (
     image_path TEXT NOT NULL
 );
 
--- 5. 使用者當前遭遇怪物表
+-- 5. 玩家當前遭遇怪物實體表
 CREATE TABLE IF NOT EXISTS user_monster_instances (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL UNIQUE,
     monster_id INTEGER NOT NULL,
     current_hp INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (monster_id) REFERENCES monsters (id)
 );
 
--- 預填一些基本怪物資料
-INSERT INTO monsters (name, max_hp, xp_reward, gold_reward, image_path) VALUES 
-('史萊姆', 50, 20, 10, '/static/images/monsters/slime.png'),
-('哥布林', 120, 50, 30, '/static/images/monsters/goblin.png'),
-('惡龍', 500, 200, 100, '/static/images/monsters/dragon.png');
+-- 6. 商店道具表
+CREATE TABLE IF NOT EXISTS items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    price INTEGER NOT NULL,
+    type TEXT NOT NULL, -- 'weapon', 'armor'
+    bonus_stat INTEGER NOT NULL DEFAULT 0
+);
+
+-- 7. 玩家背包關聯表
+CREATE TABLE IF NOT EXISTS user_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    is_equipped BOOLEAN NOT NULL DEFAULT 0,
+    acquired_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
+);
+
+-- 8. 成就設定表
+CREATE TABLE IF NOT EXISTS achievements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    requirement_type TEXT, -- 'task_completed'
+    requirement_count INTEGER,
+    reward_coins INTEGER DEFAULT 0,
+    reward_title TEXT
+);
+
+-- 9. 玩家成就解鎖紀錄表
+CREATE TABLE IF NOT EXISTS user_achievements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    achievement_id INTEGER NOT NULL,
+    unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (achievement_id) REFERENCES achievements (id) ON DELETE CASCADE
+);
+
+-- ==================== 預填初始資料 ====================
+
+-- 預填基本怪物資料
+INSERT OR IGNORE INTO monsters (id, name, max_hp, xp_reward, gold_reward, image_path) VALUES 
+(1, '小史萊姆 🟢', 30, 20, 15, 'slime'),
+(2, '森林野狼 🐺', 80, 50, 40, 'wolf'),
+(3, '惡毒蝙蝠 🦇', 50, 30, 25, 'bat'),
+(4, '哥布林強盜 👺', 120, 80, 70, 'goblin'),
+(5, '遠古巨龍 🐉', 500, 300, 250, 'dragon');
+
+-- 預填基本道具資料
+INSERT OR IGNORE INTO items (id, name, description, price, type, bonus_stat) VALUES 
+(1, '新手木劍 🪵', '一把散發木頭香氣的木劍，攻擊力 +5。', 30, 'weapon', 5),
+(2, '精鐵長劍 🗡️', '工匠精心打造的長劍，攻擊力 +15。', 120, 'weapon', 15),
+(3, '聖光巨劍 ⚔️', '附魔聖光力量的巨劍，攻擊力 +45。', 450, 'weapon', 45),
+(4, '冒險皮甲 🧥', '輕便耐磨的旅行皮甲，提供基礎防護。', 50, 'armor', 0),
+(5, '秘銀胸甲 🛡️', '極具防禦力的華麗胸甲。', 250, 'armor', 0);
+
+-- 預填基本成就資料
+INSERT OR IGNORE INTO achievements (id, name, description, requirement_type, requirement_count, reward_coins, reward_title) VALUES 
+(1, '初出茅廬 🗡️', '擊敗第一隻怪物 (完成 1 個任務)。', 'task_completed', 1, 50, '見習勇者'),
+(2, '怪物獵人 🏹', '累計擊敗 10 隻怪物 (完成 10 個任務)。', 'task_completed', 10, 200, '精銳獵人'),
+(3, '屠龍勇士 👑', '累計擊敗 50 隻怪物 (完成 50 個任務)。', 'task_completed', 50, 1000, '傳說英雄');
