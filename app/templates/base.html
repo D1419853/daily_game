@@ -243,6 +243,41 @@
             }
         }
 
+        /* 表單文字強制白色 (深色背景下可見) */
+        .form-label {
+            color: var(--text-light) !important;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-control {
+            color: var(--text-light) !important;
+            background-color: rgba(255, 255, 255, 0.07) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted) !important;
+            opacity: 1;
+        }
+
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.12) !important;
+            border-color: var(--accent-primary) !important;
+            box-shadow: 0 0 0 3px rgba(255, 71, 126, 0.2) !important;
+            color: var(--text-light) !important;
+        }
+
+        .input-group-text {
+            background-color: rgba(255, 255, 255, 0.07) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: var(--text-muted) !important;
+        }
+
+        .form-text {
+            color: var(--text-muted) !important;
+        }
+
         /* 頁尾 */
         footer {
             margin-top: auto;
