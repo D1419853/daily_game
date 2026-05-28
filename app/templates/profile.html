@@ -1,30 +1,117 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+    .profile-card {
+        background: rgba(24, 34, 63, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+    }
+    
+    .achievement-card {
+        background: rgba(18, 24, 41, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .achievement-card.unlocked {
+        border-color: rgba(255, 215, 0, 0.3);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.08);
+    }
+    
+    .achievement-card.locked {
+        opacity: 0.6;
+        filter: grayscale(80%);
+        border-style: dashed;
+    }
+    
+    .achievement-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .badge-icon-wrapper {
+        font-size: 2.2rem;
+        line-height: 1;
+        transition: transform 0.3s ease;
+    }
+    
+    .achievement-card.unlocked:hover .badge-icon-wrapper {
+        transform: scale(1.1) rotate(5deg);
+    }
+    
+    .rank-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.85rem;
+    }
+    
+    .rank-1 { background-color: #ffd700; color: #000; }
+    .rank-2 { background-color: #c0c0c0; color: #000; }
+    .rank-3 { background-color: #cd7f32; color: #000; }
+    .rank-other { background-color: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    .my-row {
+        background: rgba(0, 242, 254, 0.08) !important;
+        border-left: 3px solid var(--accent-secondary) !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
+<div class="row g-4">
     <!-- 成就牆 -->
-    <div class="col-md-7">
-        <div class="card game-card mb-4 p-4">
-            <h3 class="pixel-font mb-4">ACHIEVEMENTS</h3>
-            <div class="row">
-                {% if unlocked_achievements %}
-                    {% for ach in unlocked_achievements %}
-                    <div class="col-md-6 mb-3">
-                        <div class="d-flex align-items-center p-3 bg-light rounded shadow-sm">
-                            <div class="achievement-badge me-3">
-                                🏆
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold">{{ ach.name }}</h6>
-                                <small class="text-muted">{{ ach.description }}</small>
-                                <div class="text-info" style="font-size: 0.75rem;">{{ ach.unlocked_at }} 解鎖</div>
+    <div class="col-lg-8">
+        <div class="card profile-card p-4 h-100">
+            <h3 class="pixel-font text-info mb-4" style="font-size: 1.1rem; letter-spacing: 0.5px;">
+                <i class="bi bi-trophy-fill text-warning me-2"></i>HEROIC ACHIEVEMENTS
+            </h3>
+            
+            <div class="row g-3">
+                {% if achievements %}
+                    {% for ach in achievements %}
+                        {% set is_unlocked = ach.id in unlocked_ids %}
+                        <div class="col-md-6">
+                            <div class="card achievement-card p-3 h-100 {% if is_unlocked %}unlocked{% else %}locked{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <div class="badge-icon-wrapper me-3">
+                                        {% if is_unlocked %}
+                                            🏆
+                                        {% else %}
+                                            🔒
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold {% if is_unlocked %}text-warning{% else %}text-light{% endif %}">
+                                            {{ ach.name }}
+                                        </h6>
+                                        <p class="text-muted mb-1 small">{{ ach.description }}</p>
+                                        {% if is_unlocked %}
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25" style="font-size: 0.75rem;">
+                                                已解鎖：獲得 🪙 {{ ach.reward_coins }}金幣與稱號「{{ ach.reward_title }}」
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size: 0.75rem;">
+                                                未達標：達成解鎖 🪙 {{ ach.reward_coins }}金幣
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     {% endfor %}
                 {% else %}
-                    <div class="text-center py-5 text-muted">
-                        <p>尚未解鎖任何成就。繼續努力打怪吧！</p>
+                    <div class="text-center py-5 text-muted col-12">
+                        <i class="bi bi-slash-circle fs-2 d-block mb-2"></i>
+                        <p class="mb-0">尚未有任何成就設定。</p>
                     </div>
                 {% endif %}
             </div>
@@ -32,42 +119,70 @@
     </div>
 
     <!-- 排行榜 -->
-    <div class="col-md-5">
-        <div class="card game-card p-4">
-            <h3 class="pixel-font mb-4">LEADERBOARD</h3>
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th width="10%">#</th>
-                        <th>冒險者</th>
-                        <th class="text-end">金幣</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if leaderboard %}
-                        {% for player in leaderboard %}
-                        <tr {% if player.id == session.get('user_id') %}class="table-warning"{% endif %}>
-                            <td>{{ loop.index }}</td>
-                            <td>
-                                <strong>{{ player.username }}</strong><br>
-                                <small class="text-muted">{{ player.current_title or "新手" }}</small>
-                            </td>
-                            <td class="text-end fw-bold gold-text">{{ player.coins }}</td>
+    <div class="col-lg-4">
+        <div class="card profile-card p-4 h-100">
+            <h3 class="pixel-font text-danger mb-4" style="font-size: 1.1rem; letter-spacing: 0.5px;">
+                <i class="bi bi-list-ol me-2"></i>LEADERBOARD
+            </h3>
+            
+            <div class="table-responsive">
+                <table class="table table-dark table-hover table-borderless align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted" style="font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                            <th width="15%">名次</th>
+                            <th>勇者冒險者</th>
+                            <th class="text-end">金幣累積</th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="3" class="text-center text-muted">目前暫無排名資料</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-            {% if not show_leaderboard %}
-            <div class="text-center mt-3">
-                <a href="{{ url_for('index.leaderboard') }}" class="btn btn-outline-primary btn-sm btn-game">查看完整榜單</a>
+                    </thead>
+                    <tbody>
+                        {% if leaderboard %}
+                            {% for player in leaderboard %}
+                                {% set is_me = player.id == session.get('user_id') %}
+                                <tr class="{% if is_me %}my-row{% endif %}" style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                    <td>
+                                        {% if loop.index == 1 %}
+                                            <span class="rank-badge rank-1">🥇</span>
+                                        {% elif loop.index == 2 %}
+                                            <span class="rank-badge rank-2">🥈</span>
+                                        {% elif loop.index == 3 %}
+                                            <span class="rank-badge rank-3">🥉</span>
+                                        {% else %}
+                                            <span class="rank-badge rank-other">{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="ms-1">
+                                                <span class="fw-bold {% if is_me %}text-info{% else %}text-light{% endif %}">
+                                                    {{ player.username }}
+                                                    {% if is_me %}<span class="badge bg-info bg-opacity-25 text-info ms-1" style="font-size: 0.65rem;">您</span>{% endif %}
+                                                </span>
+                                                <small class="text-muted d-block" style="font-size: 0.75rem;">
+                                                    LV.{{ player.level }} · {{ player.current_title or "新手冒險者" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-bold text-warning" style="font-size: 0.95rem;">
+                                        <i class="bi bi-coin me-1"></i>{{ player.gold }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-5">目前暫無排名資料</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-            {% endif %}
         </div>
     </div>
+</div>
+
+<div class="text-center mt-5">
+    <a href="{{ url_for('main.index') }}" class="btn btn-outline-custom">
+        <i class="bi bi-arrow-left me-1"></i>返回遊戲大廳
+    </a>
 </div>
 {% endblock %}

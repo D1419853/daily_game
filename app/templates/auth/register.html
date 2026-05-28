@@ -1,59 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm mt-5">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">創建勇者帳號</h3>
-                
-                <form action="{{ url_for('auth.register') }}" method="POST">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">帳號名稱</label>
-                        <input type="text" class="form-control" id="username" name="username" required placeholder="請輸入您想使用的勇者名稱">
-                        <div class="form-text">此名稱將作為登入帳號，且不可與他人重複。</div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="password" class="form-label">密碼</label>
-                        <input type="password" class="form-control" id="password" name="password" required placeholder="請設定一組安全密碼">
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg">註冊並開始冒險</button>
-                    </div>
-                </form>
-                
-                <div class="text-center mt-3">
-                    <span class="text-muted">已經有帳號了？</span>
-                    <a href="{{ url_for('auth.login') }}" class="text-decoration-none">返回登入</a>
-                </div>
-<h2>註冊</h2>
-<!-- 註冊表單骨架 -->
-<form action="/register" method="POST">
-    <!-- input 欄位 -->
-</form>
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card p-4 shadow border-info">
-            <h2 class="text-center mb-4 text-info">註冊新勇者</h2>
-            <form method="POST">
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card p-4 shadow">
+            <div class="text-center mb-4">
+                <h2 class="text-success fw-bold"><i class="bi bi-person-plus-fill me-2"></i>創建勇者帳號</h2>
+                <p class="text-muted">加入冒險行列，把日常變成遊戲！</p>
+            </div>
+            
+            <form action="{{ url_for('auth.register') }}" method="POST">
                 <div class="mb-3">
-                    <label class="form-label">選擇使用者名稱</label>
-                    <input type="text" name="username" class="form-control bg-dark text-white border-secondary" required>
+                    <label for="username" class="form-label">選擇冒險者名稱</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent text-white border-secondary"><i class="bi bi-person"></i></span>
+                        <input type="text" name="username" class="form-control bg-transparent text-white border-secondary" id="username" placeholder="請輸入您的帳號" required>
+                    </div>
+                    <div class="form-text text-muted" style="font-size: 0.8rem;">此名稱不可與其他勇者重複。</div>
                 </div>
+                
                 <div class="mb-4">
-                    <label class="form-label">設定密碼</label>
-                    <input type="password" name="password" class="form-control bg-dark text-white border-secondary" required>
+                    <label for="password" class="form-label">設定密碼</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent text-white border-secondary"><i class="bi bi-key"></i></span>
+                        <input type="password" name="password" class="form-control bg-transparent text-white border-secondary" id="password" placeholder="請設定安全密碼" required>
+                    </div>
                 </div>
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-info btn-lg text-white">建立角色並出發</button>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-gradient-secondary btn-lg">建立角色並出發</button>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-link text-info text-decoration-none mt-2">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>已經有帳號了？返回登入
+                    </a>
                 </div>
             </form>
-            <div class="mt-3 text-center">
-                <small>已經有帳號了？ <a href="{{ url_for('auth.login') }}" class="text-warning">返回登入</a></small>
-            </div>
         </div>
     </div>
 </div>
 {% endblock %}
+

@@ -1,45 +1,160 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+    .shop-container {
+        background: rgba(24, 34, 63, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+    }
+    
+    .item-card {
+        background: rgba(18, 24, 41, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .item-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 242, 254, 0.15);
+        border-color: rgba(0, 242, 254, 0.3);
+    }
+
+    .weapon-card {
+        border-left: 4px solid var(--accent-primary);
+    }
+
+    .armor-card {
+        border-left: 4px solid var(--accent-secondary);
+    }
+    
+    .item-stat {
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .owned-badge {
+        background: rgba(46, 196, 182, 0.1);
+        color: #2ec4b6;
+        border: 1px solid rgba(46, 196, 182, 0.2);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="text-center mb-5">
-    <h2 class="text-warning fw-bold">冒險者商店</h2>
-    <p class="text-muted">用你戰鬥獲得的金幣兌換實體或虛擬獎勵吧！</p>
-</div>
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shop-container p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary border-opacity-15">
+                <div>
+                    <h2 class="text-warning fw-bold mb-1"><i class="bi bi-shop me-2"></i>冒險者商店</h2>
+                    <p class="text-muted mb-0">利用冒險獲得的金幣，換取強大的武器與防具來擊敗怪物吧！</p>
+                </div>
+                <div class="bg-dark bg-opacity-35 px-4 py-3 rounded-3 text-end border border-secondary border-opacity-10">
+                    <small class="text-muted d-block text-uppercase" style="font-size: 0.75rem;">您的金幣餘額</small>
+                    <span class="fw-bold text-warning fs-4"><i class="bi bi-coin me-1"></i>{{ user.gold }} Gold</span>
+                </div>
+            </div>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
-    <div class="col">
-        <div class="card h-100 p-4 text-center">
-            <i class="bi bi-cup-hot h1 text-info mb-3"></i>
-            <h4>大冒險能量水</h4>
-            <p class="text-muted">（實體獎勵：獎勵自己一杯大杯珍奶）</p>
-            <div class="mt-auto">
-                <button class="btn btn-outline-info w-100" disabled>100 金幣 (開發中)</button>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="card h-100 p-4 text-center">
-            <i class="bi bi-controller h1 text-warning mb-3"></i>
-            <h4>虛空穿梭券</h4>
-            <p class="text-muted">（實體獎勵：玩一小時遊戲）</p>
-            <div class="mt-auto">
-                <button class="btn btn-outline-warning w-100" disabled>50 金幣 (開發中)</button>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="card h-100 p-4 text-center">
-            <i class="bi bi-stars h1 text-danger mb-3"></i>
-            <h4>璀璨頭像框</h4>
-            <p class="text-muted">（虛擬獎勵：解鎖限定頭像外框）</p>
-            <div class="mt-auto">
-                <button class="btn btn-outline-danger w-100" disabled>200 金幣 (開發中)</button>
-            </div>
-        </div>
-    </div>
-</div>
+            <div class="row">
+                <!-- 左側：商品貨架 -->
+                <div class="col-lg-8 border-end border-secondary border-opacity-10 pe-lg-4">
+                    <h4 class="pixel-font text-info mb-4" style="font-size: 1rem;"><i class="bi bi-bag-check-fill me-2"></i>MERCHANDISE</h4>
+                    
+                    <div class="row g-3">
+                        {% for item in items %}
+                        <div class="col-md-6">
+                            <div class="card item-card h-100 p-3 {% if item.type == 'weapon' %}weapon-card{% else %}armor-card{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="fw-bold text-light mb-0">{{ item.name }}</h5>
+                                    <span class="badge {% if item.type == 'weapon' %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25{% else %}bg-info bg-opacity-25 text-info border border-info border-opacity-25{% endif %} fs-8">
+                                        {{ '武器' if item.type == 'weapon' else '防具' }}
+                                    </span>
+                                </div>
+                                <p class="text-muted small mb-3">{{ item.description }}</p>
+                                
+                                <div class="mt-auto d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% if item.bonus_stat > 0 %}
+                                            <span class="item-stat {% if item.type == 'weapon' %}text-danger{% else %}text-info{% endif %} d-block mb-1">
+                                                <i class="bi bi-shield-shaded me-1"></i>攻擊力 +{{ item.bonus_stat }}
+                                            </span>
+                                        {% endif %}
+                                        <span class="fw-bold text-warning"><i class="bi bi-coin me-1"></i>{{ item.price }}</span>
+                                    </div>
+                                    
+                                    <form action="{{ url_for('main.buy_item', item_id=item.id) }}" method="POST">
+                                        {% if user.gold >= item.price %}
+                                            <button type="submit" class="btn btn-gradient-primary btn-sm rounded-3">
+                                                <i class="bi bi-cart-plus me-1"></i>購買
+                                            </button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm rounded-3" disabled>
+                                                金幣不足
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
 
-<div class="text-center mt-5">
-    <a href="{{ url_for('combat.index') }}" class="btn btn-secondary">返回戰場</a>
+                <!-- 右側：冒險者背包 -->
+                <div class="col-lg-4 ps-lg-4 mt-5 mt-lg-0">
+                    <h4 class="pixel-font text-success mb-4" style="font-size: 1rem;"><i class="bi bi-briefcase-fill me-2"></i>INVENTORY</h4>
+                    
+                    <div class="d-grid gap-2">
+                        {% if user_items %}
+                            {% for ui in user_items %}
+                            <div class="card bg-dark bg-opacity-25 border-secondary border-opacity-20 p-3 rounded-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-light fs-6">{{ ui.name }}</span>
+                                    {% if ui.is_equipped %}
+                                        <span class="badge owned-badge"><i class="bi bi-check-circle-fill me-1"></i>已裝備</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted d-block mb-2">{{ ui.description }}</small>
+                                
+                                <div class="d-flex justify-content-between align-items-center border-top border-secondary border-opacity-10 pt-2 mt-1">
+                                    <small class="text-muted">
+                                        {% if ui.bonus_stat > 0 %}
+                                            <span class="text-danger fw-bold"><i class="bi bi-shield-shaded me-1"></i>ATK +{{ ui.bonus_stat }}</span>
+                                        {% else %}
+                                            <span class="text-info fw-bold">一般道具</span>
+                                        {% endif %}
+                                    </small>
+                                    
+                                    {% if not ui.is_equipped %}
+                                    <form action="{{ url_for('main.equip_item', user_item_id=ui.user_item_id) }}" method="POST">
+                                        <button type="submit" class="btn btn-gradient-secondary btn-sm rounded-3" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">
+                                            裝備
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-5 bg-dark bg-opacity-15 rounded-3 border border-secondary border-opacity-10">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                <p class="mb-0 small">背包空空如也...<br>快去買些強力裝備吧！</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5 pt-3 border-top border-secondary border-opacity-10">
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-custom">
+                    <i class="bi bi-arrow-left me-1"></i>返回遊戲大廳
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
+
