@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}怪物圖鑑 - Daily Game{% endblock %}
+
+{% block extra_css %}
+<style>
+    .encyclopedia-card {
+        background: rgba(24, 34, 63, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .encyclopedia-card.unlocked {
+        border: 1.5px solid rgba(0, 242, 254, 0.25);
+        box-shadow: 0 5px 15px rgba(0, 242, 254, 0.05);
+    }
+
+    .encyclopedia-card.unlocked:hover {
+        transform: translateY(-5px) scale(1.02);
+        border-color: rgba(0, 242, 254, 0.6);
+        box-shadow: 0 10px 25px rgba(0, 242, 254, 0.2);
+    }
+
+    .encyclopedia-card.locked {
+        opacity: 0.55;
+        border: 1.5px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .monster-avatar-container {
+        height: 140px;
+        background: rgba(10, 15, 28, 0.4);
+        border-radius: 12px;
+        position: relative;
+    }
+
+    .monster-avatar {
+        max-height: 110px;
+        transition: transform 0.3s ease;
+    }
+
+    .unlocked .monster-avatar {
+        filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.4));
+    }
+
+    .unlocked:hover .monster-avatar {
+        transform: scale(1.1) rotate(3deg);
+    }
+
+    .locked .monster-avatar {
+        /* CSS 剪影濾鏡效果 */
+        filter: brightness(0) invert(0.15);
+    }
+
+    .stats-progress-card {
+        background: linear-gradient(135deg, rgba(24, 34, 63, 0.8), rgba(12, 16, 32, 0.8));
+        border: 1px solid rgba(255, 71, 126, 0.2);
+        box-shadow: 0 5px 20px rgba(255, 71, 126, 0.08);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card stats-progress-card p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="pixel-font text-info mb-2" style="font-size: 1.25rem;">
+                        <i class="bi bi-book-half me-2"></i>MONSTER ENCYCLOPEDIA
+                    </h2>
+                    <p class="text-muted mb-3 mb-md-0">
+                        擊敗冒險中遭遇的怪物，將其登錄於圖鑑中。解鎖怪物的隱藏資訊，完成你的討伐大業吧！
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    {% set total_types = all_monsters|length %}
+                    {% set unlocked_types = defeated_monsters|length %}
+                    {% set percent = (unlocked_types / total_types * 100)|int if total_types > 0 else 0 %}
+                    
+                    <div class="d-flex justify-content-between mb-1 small">
+                        <span class="text-uppercase text-muted fw-bold">解鎖進度 (COMPLETION)</span>
+                        <span class="text-info fw-bold">{{ unlocked_types }} / {{ total_types }}</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar-fill bg-info" style="width: {{ percent }}%;"></div>
+                        <div class="progress-bar-text">{{ percent }}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 怪物圖鑑列表 -->
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for monster in all_monsters %}
+        {% set is_unlocked = monster.id in defeated_monsters %}
+        {% set record = defeated_monsters[monster.id] if is_unlocked else none %}
+        <div class="col">
+            <div class="card encyclopedia-card h-100 p-3 {% if is_unlocked %}unlocked{% else %}locked{% endif %}">
+                
+                <!-- 怪物圖示區 -->
+                <div class="monster-avatar-container d-flex justify-content-center align-items-center mb-3">
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ monster.image_path }}" class="monster-avatar img-fluid" alt="monster">
+                    
+                    <!-- 右上角鎖頭或擊敗標籤 -->
+                    <div class="position-absolute top-2 end-2" style="top: 8px; right: 8px;">
+                        {% if is_unlocked %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 fs-8">
+                                <i class="bi bi-unlock-fill me-1"></i>已解鎖
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary bg-opacity-20 text-muted fs-8">
+                                <i class="bi bi-lock-fill me-1"></i>未解鎖
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- 怪物資訊區 -->
+                <div class="text-center">
+                    {% if is_unlocked %}
+                        <h5 class="fw-bold text-light mb-2">{{ monster.name }}</h5>
+                        <div class="mb-3 bg-dark bg-opacity-25 py-2 px-3 rounded-3 d-inline-block">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.65rem;">累計擊敗</small>
+                            <span class="fw-extrabold text-warning fs-6">{{ record.defeat_count }} 次</span>
+                        </div>
+                        
+                        <div class="border-top border-secondary border-opacity-10 pt-3 text-start">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>最大生命值:</span>
+                                <span class="text-danger fw-bold">{{ monster.max_hp }} HP</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>討伐經驗:</span>
+                                <span class="text-info fw-bold">+{{ monster.xp_reward }} EXP</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>討伐金幣:</span>
+                                <span class="text-warning fw-bold"><i class="bi bi-coin me-1"></i>+{{ monster.gold_reward }}</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <h5 class="fw-bold text-muted mb-2">？？？？</h5>
+                        <div class="mb-3 py-2 px-3 d-inline-block">
+                            <span class="text-muted-dark small">??? 次</span>
+                        </div>
+                        
+                        <div class="border-top border-secondary border-opacity-5 pt-3 text-start">
+                            <div class="d-flex justify-content-between small text-muted-dark mb-1">
+                                <span>最大生命值:</span>
+                                <span>??? HP</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted-dark mb-1">
+                                <span>討伐經驗:</span>
+                                <span>??? EXP</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted-dark">
+                                <span>討伐金幣:</span>
+                                <span>???</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="text-center mt-5">
+    <a href="{{ url_for('main.index') }}" class="btn btn-outline-custom">
+        <i class="bi bi-arrow-left me-1"></i>返回遊戲大廳
+    </a>
+</div>
+{% endblock %}

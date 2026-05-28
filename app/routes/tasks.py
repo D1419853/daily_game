@@ -1,6 +1,6 @@
 from flask import Blueprint, request, redirect, url_for, flash, session
 from app.models.task import Task
-from app.models.monster import UserMonsterInstance
+from app.models.monster import UserMonsterInstance, Monster
 from app.models.item import Item
 from app.models.user import User
 from app.models.achievement import Achievement
@@ -105,6 +105,9 @@ def complete_task(task_id):
             xp_reward = monster['xp_reward']
             gold_reward = monster['gold_reward']
             res = User.add_rewards(user_id, xp_reward, gold_reward)
+            
+            # 紀錄擊敗到圖鑑中
+            Monster.record_defeat(user_id, monster['monster_id'])
             
             # 生成新怪物
             UserMonsterInstance.spawn_for_user(user_id)

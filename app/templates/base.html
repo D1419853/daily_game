@@ -283,6 +283,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'main.encyclopedia' %}active{% endif %}" href="{{ url_for('main.encyclopedia') }}">
+                                <i class="bi bi-book-half me-1"></i>怪物圖鑑
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'main.profile' %}active{% endif %}" href="{{ url_for('main.profile') }}">
                                 <i class="bi bi-trophy-fill me-1"></i>英雄榜與成就
                             </a>

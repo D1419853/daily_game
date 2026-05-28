@@ -28,6 +28,59 @@ class Monster:
         finally:
             conn.close()
 
+    @staticmethod
+    def record_defeat(user_id, monster_id):
+        """紀錄或增加使用者擊敗怪物的次數"""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            # 檢查是否已擊敗過
+            cursor.execute(
+                "SELECT defeat_count FROM user_defeated_monsters WHERE user_id = ? AND monster_id = ?",
+                (user_id, monster_id)
+            )
+            row = cursor.fetchone()
+            if row:
+                cursor.execute(
+                    "UPDATE user_defeated_monsters SET defeat_count = defeat_count + 1 WHERE user_id = ? AND monster_id = ?",
+                    (user_id, monster_id)
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO user_defeated_monsters (user_id, monster_id, defeat_count) VALUES (?, ?, 1)",
+                    (user_id, monster_id)
+                )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error recording monster defeat: {e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_defeated_by_user(user_id):
+        """取得使用者所有已擊敗的怪物紀錄"""
+        conn = get_db_connection()
+        try:
+            rows = conn.execute(
+                """
+                SELECT udm.monster_id, udm.defeat_count, m.name, m.max_hp, m.xp_reward, m.gold_reward, m.image_path
+                FROM user_defeated_monsters udm
+                JOIN monsters m ON udm.monster_id = m.id
+                WHERE udm.user_id = ?
+                """,
+                (user_id,)
+            ).fetchall()
+            return {r['monster_id']: dict(r) for r in rows}
+        except Exception as e:
+            print(f"Error getting defeated monsters for user: {e}")
+            return {}
+        finally:
+            conn.close()
+
+
 
 class UserMonsterInstance:
     @staticmethod

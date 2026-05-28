@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, session
 from app.models.user import User
 from app.models.task import Task
-from app.models.monster import UserMonsterInstance
+from app.models.monster import UserMonsterInstance, Monster
 from app.models.item import Item
 from app.models.achievement import Achievement
 from functools import wraps
@@ -116,10 +116,48 @@ def profile():
     # 整理已解鎖成就的 ID 方便在範本中判斷亮起狀態
     unlocked_ids = {a['id'] for a in unlocked_achievements}
     
+    # 獲取已領取的里程碑獎勵
+    claimed_rewards = User.get_claimed_rewards(user_id)
+    level_rewards_config = User.LEVEL_REWARDS_CONFIG
+    
     return render_template(
         'profile.html',
         user=user,
         achievements=achievements,
         unlocked_ids=unlocked_ids,
-        leaderboard=leaderboard
+        leaderboard=leaderboard,
+        claimed_rewards=claimed_rewards,
+        level_rewards_config=level_rewards_config
     )
+
+@main_bp.route('/profile/claim_reward/<int:level>', methods=['POST'])
+@login_required
+def claim_reward(level):
+    """領取等級里程碑獎勵"""
+    user_id = session['user_id']
+    success, message = User.claim_level_reward(user_id, level)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'danger')
+    return redirect(url_for('main.profile'))
+
+@main_bp.route('/encyclopedia')
+@login_required
+def encyclopedia():
+    """怪物圖鑑"""
+    user_id = session['user_id']
+    user = User.get_by_id(user_id)
+    
+    # 取得所有怪物範本
+    all_monsters = Monster.get_all()
+    # 取得該使用者已擊敗的怪物紀錄
+    defeated_monsters = Monster.get_defeated_by_user(user_id)
+    
+    return render_template(
+        'encyclopedia.html',
+        user=user,
+        all_monsters=all_monsters,
+        defeated_monsters=defeated_monsters
+    )
+

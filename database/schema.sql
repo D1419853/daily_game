@@ -92,6 +92,26 @@ CREATE TABLE IF NOT EXISTS user_achievements (
     FOREIGN KEY (achievement_id) REFERENCES achievements (id) ON DELETE CASCADE
 );
 
+-- 10. 怪物擊敗紀錄表 (用於圖鑑)
+CREATE TABLE IF NOT EXISTS user_defeated_monsters (
+    user_id INTEGER NOT NULL,
+    monster_id INTEGER NOT NULL,
+    defeat_count INTEGER DEFAULT 0,
+    PRIMARY KEY (user_id, monster_id),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (monster_id) REFERENCES monsters (id) ON DELETE CASCADE
+);
+
+-- 11. 等級里程碑獎勵領取紀錄表
+CREATE TABLE IF NOT EXISTS user_claimed_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    reward_level INTEGER NOT NULL,
+    claimed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, reward_level),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
 -- ==================== 預填初始資料 ====================
 
 -- 預填基本怪物資料
@@ -100,7 +120,16 @@ INSERT OR IGNORE INTO monsters (id, name, max_hp, xp_reward, gold_reward, image_
 (2, '森林野狼 🐺', 80, 50, 40, 'wolf'),
 (3, '惡毒蝙蝠 🦇', 50, 30, 25, 'bat'),
 (4, '哥布林強盜 👺', 120, 80, 70, 'goblin'),
-(5, '遠古巨龍 🐉', 500, 300, 250, 'dragon');
+(5, '遠古巨龍 🐉', 500, 300, 250, 'dragon'),
+(6, '骷髏戰士 💀', 90, 60, 50, 'skeleton'),
+(7, '烈焰精靈 🔥', 150, 100, 80, 'fire'),
+(8, '暗影刺客 👤', 110, 75, 65, 'assassin'),
+(9, '鋼鐵巨像 🤖', 250, 160, 130, 'golem'),
+(10, '不死殭屍 🧟', 70, 40, 35, 'zombie'),
+(11, '樹妖長老 🌳', 200, 120, 100, 'treant'),
+(12, '浴火鳳凰 🐦', 300, 180, 150, 'phoenix'),
+(13, '深海巨妖 🐙', 400, 250, 220, 'kraken');
+
 
 -- 預填基本道具資料
 INSERT OR IGNORE INTO items (id, name, description, price, type, bonus_stat) VALUES 

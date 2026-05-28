@@ -159,3 +159,79 @@ class User:
             return False
         finally:
             conn.close()
+
+    LEVEL_REWARDS_CONFIG = {
+        10: {"gold": 500, "title": "初階冒險大師 🏅"},
+        20: {"gold": 1500, "title": "幻獸終結者 ⚔️"},
+        30: {"gold": 5000, "title": "聖光守護者 🌟"},
+        40: {"gold": 12000, "title": "元素主宰者 🔮"},
+        50: {"gold": 30000, "title": "弒神之刃 👑"}
+    }
+
+    @staticmethod
+    def get_claimed_rewards(user_id):
+        """取得使用者已領取的等級獎勵清單"""
+        conn = get_db_connection()
+        try:
+            rows = conn.execute(
+                "SELECT reward_level FROM user_claimed_rewards WHERE user_id = ?",
+                (user_id,)
+            ).fetchall()
+            return [r['reward_level'] for r in rows]
+        except Exception as e:
+            print(f"Error getting claimed rewards: {e}")
+            return []
+        finally:
+            conn.close()
+
+    @staticmethod
+    def claim_level_reward(user_id, level):
+        """領取等級獎勵"""
+        if level not in User.LEVEL_REWARDS_CONFIG:
+            return False, "無效的獎勵等級"
+
+        reward = User.LEVEL_REWARDS_CONFIG[level]
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            # 1. 檢查玩家目前等級
+            cursor.execute("SELECT level, gold, current_title FROM characters WHERE user_id = ?", (user_id,))
+            char = cursor.fetchone()
+            if not char:
+                return False, "找不到角色資料"
+
+            if char['level'] < level:
+                return False, f"等級不足！需要達到 LV.{level}"
+
+            # 2. 檢查是否已經領過
+            cursor.execute(
+                "SELECT id FROM user_claimed_rewards WHERE user_id = ? AND reward_level = ?",
+                (user_id, level)
+            )
+            if cursor.fetchone():
+                return False, "該等級獎勵已領取過"
+
+            # 3. 發放獎勵
+            new_gold = char['gold'] + reward['gold']
+            new_title = reward['title']
+
+            cursor.execute(
+                "UPDATE characters SET gold = ?, current_title = ? WHERE user_id = ?",
+                (new_gold, new_title, user_id)
+            )
+            
+            # 4. 寫入領取紀錄
+            cursor.execute(
+                "INSERT INTO user_claimed_rewards (user_id, reward_level) VALUES (?, ?)",
+                (user_id, level)
+            )
+
+            conn.commit()
+            return True, f"成功領取 LV.{level} 獎勵！獲得 🪙 {reward['gold']} 金幣並獲得新稱號「{reward['title']}」！"
+        except Exception as e:
+            print(f"Error claiming level reward: {e}")
+            conn.rollback()
+            return False, "系統錯誤，請稍後再試"
+        finally:
+            conn.close()
+

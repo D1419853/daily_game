@@ -63,57 +63,161 @@
         background: rgba(0, 242, 254, 0.08) !important;
         border-left: 3px solid var(--accent-secondary) !important;
     }
+
+    .achievement-card.reached-glow {
+        border-color: rgba(0, 242, 254, 0.4);
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
+        animation: pulseGlow 2s infinite alternate;
+    }
+    
+    @keyframes pulseGlow {
+        from {
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.1);
+        }
+        to {
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+            border-color: rgba(0, 242, 254, 0.8);
+        }
+    }
+    
+    .profile-card .nav-pills .nav-link {
+        color: var(--text-muted);
+        border: 1px solid transparent;
+        transition: all 0.3s;
+        border-radius: 8px;
+    }
+    
+    .profile-card .nav-pills .nav-link.active {
+        background-color: var(--accent-primary) !important;
+        color: white !important;
+        box-shadow: 0 0 10px rgba(255, 71, 126, 0.4);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row g-4">
-    <!-- 成就牆 -->
+    <!-- 成就與等級里程碑 -->
     <div class="col-lg-8">
         <div class="card profile-card p-4 h-100">
-            <h3 class="pixel-font text-info mb-4" style="font-size: 1.1rem; letter-spacing: 0.5px;">
-                <i class="bi bi-trophy-fill text-warning me-2"></i>HEROIC ACHIEVEMENTS
-            </h3>
-            
-            <div class="row g-3">
-                {% if achievements %}
-                    {% for ach in achievements %}
-                        {% set is_unlocked = ach.id in unlocked_ids %}
-                        <div class="col-md-6">
-                            <div class="card achievement-card p-3 h-100 {% if is_unlocked %}unlocked{% else %}locked{% endif %}">
-                                <div class="d-flex align-items-center">
-                                    <div class="badge-icon-wrapper me-3">
-                                        {% if is_unlocked %}
-                                            🏆
-                                        {% else %}
-                                            🔒
-                                        {% endif %}
+            <!-- 分頁選單 -->
+            <ul class="nav nav-pills mb-4" id="profileTabs" role="tablist" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px;">
+                <li class="nav-item me-2" role="presentation">
+                    <button class="nav-link active pixel-font" id="achievements-tab" data-bs-toggle="tab" data-bs-target="#achievements" type="button" role="tab" aria-controls="achievements" aria-selected="true" style="font-size: 0.7rem;">
+                        <i class="bi bi-trophy-fill me-1"></i>成就牆
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link pixel-font position-relative" id="rewards-tab" data-bs-toggle="tab" data-bs-target="#rewards" type="button" role="tab" aria-controls="rewards" aria-selected="false" style="font-size: 0.7rem;">
+                        <i class="bi bi-gift-fill me-1"></i>等級獎勵
+                        {% set eligible_unclaimed = namespace(count=0) %}
+                        {% for lv, reward in level_rewards_config.items() %}
+                            {% if user.level >= lv and lv not in claimed_rewards %}
+                                {% set eligible_unclaimed.count = eligible_unclaimed.count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if eligible_unclaimed.count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                <span class="visually-hidden">New rewards</span>
+                            </span>
+                        {% endif %}
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="profileTabsContent">
+                <!-- 成就分頁 -->
+                <div class="tab-pane fade show active" id="achievements" role="tabpanel" aria-labelledby="achievements-tab">
+                    <div class="row g-3">
+                        {% if achievements %}
+                            {% for ach in achievements %}
+                                {% set is_unlocked = ach.id in unlocked_ids %}
+                                <div class="col-md-6">
+                                    <div class="card achievement-card p-3 h-100 {% if is_unlocked %}unlocked{% else %}locked{% endif %}">
+                                        <div class="d-flex align-items-center">
+                                            <div class="badge-icon-wrapper me-3">
+                                                {% if is_unlocked %}
+                                                    🏆
+                                                {% else %}
+                                                    🔒
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1 fw-bold {% if is_unlocked %}text-warning{% else %}text-light{% endif %}">
+                                                    {{ ach.name }}
+                                                </h6>
+                                                <p class="text-muted mb-1 small">{{ ach.description }}</p>
+                                                {% if is_unlocked %}
+                                                    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25" style="font-size: 0.75rem;">
+                                                        已解鎖：獲得 🪙 {{ ach.reward_coins }}金幣與稱號「{{ ach.reward_title }}」
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size: 0.75rem;">
+                                                        未達標：達成解鎖 🪙 {{ ach.reward_coins }}金幣
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h6 class="mb-1 fw-bold {% if is_unlocked %}text-warning{% else %}text-light{% endif %}">
-                                            {{ ach.name }}
-                                        </h6>
-                                        <p class="text-muted mb-1 small">{{ ach.description }}</p>
-                                        {% if is_unlocked %}
-                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25" style="font-size: 0.75rem;">
-                                                已解鎖：獲得 🪙 {{ ach.reward_coins }}金幣與稱號「{{ ach.reward_title }}」
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size: 0.75rem;">
-                                                未達標：達成解鎖 🪙 {{ ach.reward_coins }}金幣
-                                            </span>
-                                        {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5 text-muted col-12">
+                                <i class="bi bi-slash-circle fs-2 d-block mb-2"></i>
+                                <p class="mb-0">尚未有任何成就設定。</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 等級里程碑獎勵分頁 -->
+                <div class="tab-pane fade" id="rewards" role="tabpanel" aria-labelledby="rewards-tab">
+                    <div class="row g-3">
+                        {% for lv, reward in level_rewards_config.items() %}
+                            {% set is_reached = user.level >= lv %}
+                            {% set is_claimed = lv in claimed_rewards %}
+                            <div class="col-md-6">
+                                <div class="card achievement-card p-3 h-100 {% if is_claimed %}unlocked{% elif is_reached %}reached-glow{% else %}locked{% endif %}">
+                                    <div class="d-flex align-items-center">
+                                        <div class="badge-icon-wrapper me-3">
+                                            {% if is_claimed %}
+                                                🎁
+                                            {% elif is_reached %}
+                                                ✨
+                                            {% else %}
+                                                🔒
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-bold {% if is_claimed or is_reached %}text-info{% else %}text-light{% endif %}">
+                                                等級里程碑：LV.{{ lv }}
+                                            </h6>
+                                            <p class="text-muted mb-2 small">
+                                                達成可獲得 🪙 {{ reward.gold }} 金幣與稱號「{{ reward.title }}」
+                                            </p>
+                                            
+                                            {% if is_claimed %}
+                                                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-check-lg me-1"></i>已領取
+                                                </span>
+                                            {% elif is_reached %}
+                                                <form action="{{ url_for('main.claim_reward', level=lv) }}" method="POST">
+                                                    <button type="submit" class="btn btn-gradient-secondary btn-sm w-100 py-1">
+                                                        <i class="bi bi-gift me-1"></i>領取獎勵
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <button class="btn btn-outline-secondary btn-sm w-100 py-1" disabled>
+                                                    <i class="bi bi-lock me-1"></i>未達成 (需要 LV.{{ lv }})
+                                                </button>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-5 text-muted col-12">
-                        <i class="bi bi-slash-circle fs-2 d-block mb-2"></i>
-                        <p class="mb-0">尚未有任何成就設定。</p>
+                        {% endfor %}
                     </div>
-                {% endif %}
+                </div>
             </div>
         </div>
     </div>
