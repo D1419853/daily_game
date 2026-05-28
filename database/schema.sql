@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT,
     difficulty INTEGER NOT NULL DEFAULT 1, -- 1 (Easy), 2 (Normal), 3 (Hard)
     status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'completed'
+    duration_minutes INTEGER DEFAULT 0, -- 設定倒數計時分數
+    unlock_at DATETIME, -- 解鎖可完成的具體時間
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE

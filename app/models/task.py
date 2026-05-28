@@ -1,16 +1,22 @@
 from app.models.database import get_db_connection
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class Task:
     @staticmethod
-    def create(user_id, title, description='', difficulty=1):
+    def create(user_id, title, description='', difficulty=1, duration_minutes=0):
         """新增一個冒險任務"""
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
+            
+            unlock_at = None
+            if duration_minutes > 0:
+                unlock_at_dt = datetime.now() + timedelta(minutes=duration_minutes)
+                unlock_at = unlock_at_dt.strftime("%Y-%m-%d %H:%M:%S")
+
             cursor.execute(
-                "INSERT INTO tasks (user_id, title, description, difficulty, status) VALUES (?, ?, ?, ?, 'pending')",
-                (user_id, title, description, difficulty)
+                "INSERT INTO tasks (user_id, title, description, difficulty, status, duration_minutes, unlock_at) VALUES (?, ?, ?, ?, 'pending', ?, ?)",
+                (user_id, title, description, difficulty, duration_minutes, unlock_at)
             )
             task_id = cursor.lastrowid
             conn.commit()

@@ -73,7 +73,7 @@
         <div class="card game-hud p-4 mb-4 text-center">
             <div class="mb-3 position-relative d-inline-block mx-auto">
                 <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed={{ user.username }}" alt="avatar" class="img-fluid rounded-circle border border-2 border-info p-1" style="width: 90px; height: 90px; background-color: var(--bg-dark);">
-                <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-info fs-7 border border-2 border-dark">LV.{{ user.level }}</span>
+                <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-info text-white fs-7 border border-2 border-dark">LV.{{ user.level }}</span>
             </div>
             <h4 class="pixel-font text-info mb-1" style="font-size: 1.1rem;">{{ user.username }}</h4>
             <span class="badge-premium d-inline-block mb-3 px-3 py-1">{{ user.current_title or "新手冒險者" }}</span>
@@ -157,8 +157,11 @@
                             </div>
                             <div class="d-flex gap-2">
                                 <form action="{{ url_for('tasks.complete_task', task_id=task.id) }}" method="POST">
-                                    <button type="submit" class="btn btn-gradient-secondary btn-sm rounded-3">
-                                        <i class="bi bi-shield-fill-check me-1"></i> 擊敗 (完成)
+                                    <button type="submit" class="btn btn-gradient-secondary btn-sm rounded-3 task-complete-btn" {% if task.unlock_at %}data-unlock-time="{{ task.unlock_at }}"{% endif %}>
+                                        <i class="bi bi-shield-fill-check me-1"></i> <span class="btn-text">擊敗 (完成)</span>
+                                        {% if task.unlock_at %}
+                                        <span class="ms-1 badge bg-dark text-white timer-badge" style="display: none;"></span>
+                                        {% endif %}
                                     </button>
                                 </form>
                                 <form action="{{ url_for('tasks.delete_task', task_id=task.id) }}" method="POST" onsubmit="return confirm('確定要撤回此任務嗎？')">
@@ -229,6 +232,11 @@
                         </select>
                         <div class="form-text text-muted" style="font-size: 0.8rem;">完成高難度任務能對當前怪物造成更大傷害！</div>
                     </div>
+                    <div class="mb-3">
+                        <label for="task-duration" class="form-label text-light">倒數計時 (分鐘)</label>
+                        <input type="number" id="task-duration" name="duration_minutes" class="form-control bg-dark bg-opacity-50 text-white border-secondary" min="0" value="0">
+                        <div class="form-text text-muted" style="font-size: 0.8rem;">設定大於 0 的時間，必須等待時間結束才能完成任務。預設為 0 (不計時)。</div>
+                    </div>
                 </div>
                 <div class="modal-footer border-secondary border-opacity-20">
                     <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">取消</button>
@@ -240,3 +248,41 @@
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const completeBtns = document.querySelectorAll('.task-complete-btn');
+    
+    function updateTimers() {
+        const now = new Date();
+        
+        completeBtns.forEach(btn => {
+            const unlockTimeStr = btn.getAttribute('data-unlock-time');
+            if (!unlockTimeStr) return;
+            
+            // Convert 'YYYY-MM-DD HH:MM:SS' to ISO string for parsing
+            const unlockTime = new Date(unlockTimeStr.replace(' ', 'T'));
+            const diff = Math.floor((unlockTime - now) / 1000);
+            const timerBadge = btn.querySelector('.timer-badge');
+            
+            if (diff > 0) {
+                btn.disabled = true;
+                timerBadge.style.display = 'inline-block';
+                const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                const s = (diff % 60).toString().padStart(2, '0');
+                timerBadge.textContent = `${m}:${s}`;
+                btn.classList.add('opacity-50');
+            } else {
+                btn.disabled = false;
+                timerBadge.style.display = 'none';
+                btn.classList.remove('opacity-50');
+                btn.removeAttribute('data-unlock-time');
+            }
+        });
+    }
+    
+    updateTimers();
+    setInterval(updateTimers, 1000);
+});
+</script>
+{% endblock %}

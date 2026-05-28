@@ -69,7 +69,7 @@
                             <div class="card item-card h-100 p-3 {% if item.type == 'weapon' %}weapon-card{% else %}armor-card{% endif %}">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h5 class="fw-bold text-light mb-0">{{ item.name }}</h5>
-                                    <span class="badge {% if item.type == 'weapon' %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25{% else %}bg-info bg-opacity-25 text-info border border-info border-opacity-25{% endif %} fs-8">
+                                    <span class="badge {% if item.type == 'weapon' %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25{% else %}bg-info text-white border border-info border-opacity-25{% endif %} fs-8">
                                         {{ '武器' if item.type == 'weapon' else '防具' }}
                                     </span>
                                 </div>

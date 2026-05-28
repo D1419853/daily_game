@@ -26,17 +26,23 @@ def add_task():
     title = request.form.get('title')
     description = request.form.get('description', '')
     difficulty = request.form.get('difficulty', 1)
+    duration_minutes = request.form.get('duration_minutes', 0)
     
     try:
         difficulty = int(difficulty)
     except ValueError:
         difficulty = 1
 
+    try:
+        duration_minutes = int(duration_minutes)
+    except ValueError:
+        duration_minutes = 0
+
     if not title:
         flash('任務名稱不能為空', 'danger')
         return redirect(url_for('main.index'))
 
-    task_id = Task.create(user_id, title, description, difficulty)
+    task_id = Task.create(user_id, title, description, difficulty, duration_minutes)
     if task_id:
         flash('冒險任務發佈成功！一隻新的怪物被召喚了 👾。', 'success')
     else:
@@ -76,6 +82,13 @@ def complete_task(task_id):
     if task['status'] == 'completed':
         flash('該任務已經完成過了！', 'warning')
         return redirect(url_for('main.index'))
+
+    from datetime import datetime
+    if task.get('unlock_at'):
+        unlock_time = datetime.strptime(task['unlock_at'], "%Y-%m-%d %H:%M:%S")
+        if datetime.now() < unlock_time:
+            flash('任務計時尚未結束，還不能完成！', 'warning')
+            return redirect(url_for('main.index'))
 
     # 1. 標記任務為已完成
     Task.mark_completed(task_id)
