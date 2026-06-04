@@ -112,6 +112,16 @@ def complete_task(task_id):
 
     success, is_dead = UserMonsterInstance.damage_monster(user_id, total_damage)
     
+    # 消耗武器 (僅限使用一次)
+    if equipped_weapon:
+        Item.consume_item(equipped_weapon['user_item_id'])
+        flash(f"🗡️ 您消耗了武器「{equipped_weapon['name']}」！", "warning")
+        
+    # 增加今日任務次數
+    user = User.get_by_id(user_id)
+    if user:
+        User.update_character(user_id, tasks_done_today=user['tasks_done_today'] + 1)
+    
     if success:
         if is_dead:
             # 怪物死亡！發放獎勵

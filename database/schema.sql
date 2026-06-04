@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS characters (
     xp INTEGER DEFAULT 0,
     gold INTEGER DEFAULT 0,
     current_title TEXT DEFAULT '新手冒險者',
+    current_hp INTEGER DEFAULT 100,
+    max_hp INTEGER DEFAULT 100,
+    daily_goal INTEGER DEFAULT 3,
+    tasks_done_today INTEGER DEFAULT 0,
+    last_active_date DATE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
@@ -58,7 +63,7 @@ CREATE TABLE IF NOT EXISTS items (
     name TEXT NOT NULL,
     description TEXT,
     price INTEGER NOT NULL,
-    type TEXT NOT NULL, -- 'weapon', 'armor'
+    type TEXT NOT NULL, -- 'weapon', 'armor', 'avatar'
     bonus_stat INTEGER NOT NULL DEFAULT 0
 );
 
@@ -135,14 +140,19 @@ INSERT OR IGNORE INTO monsters (id, name, max_hp, xp_reward, gold_reward, image_
 
 -- 預填基本道具資料
 INSERT OR IGNORE INTO items (id, name, description, price, type, bonus_stat) VALUES 
-(1, '新手木劍 🪵', '一把散發木頭香氣的木劍，攻擊力 +5。', 30, 'weapon', 5),
-(2, '精鐵長劍 🗡️', '工匠精心打造的長劍，攻擊力 +15。', 120, 'weapon', 15),
-(3, '聖光巨劍 ⚔️', '附魔聖光力量的巨劍，攻擊力 +45。', 450, 'weapon', 45),
-(4, '冒險皮甲 🧥', '輕便耐磨的旅行皮甲，提供基礎防護。', 50, 'armor', 0),
-(5, '秘銀胸甲 🛡️', '極具防禦力的華麗胸甲。', 250, 'armor', 0);
+(1, '新手木劍 🪵', '一把散發木頭香氣的木劍，攻擊力 +10。(限用一次)', 1000, 'weapon', 10),
+(2, '精鐵長劍 🗡️', '工匠精心打造的長劍，攻擊力 +20。(限用一次)', 2000, 'weapon', 20),
+(3, '聖光巨劍 ⚔️', '附魔聖光力量的巨劍，攻擊力 +35。(限用一次)', 3500, 'weapon', 35),
+(4, '弒神之刃 👑', '傳說中能弒神的終極武器，攻擊力 +50。(限用一次)', 5000, 'weapon', 50),
+(5, '冒險皮甲 🧥', '輕便耐磨的旅行皮甲，提供基礎防護。', 1500, 'armor', 0),
+(6, '秘銀胸甲 🛡️', '極具防禦力的華麗胸甲。', 3000, 'armor', 0),
+(7, '賽博龐克風格 🤖', '裝備後可將頭貼更換為科技風機器人。', 1000, 'avatar', 0),
+(8, '像素怪物風格 👾', '裝備後可將頭貼更換為可愛的像素怪獸。', 2000, 'avatar', 0),
+(9, '喵星人風格 🐱', '裝備後可將頭貼更換為療癒的貓咪。', 3000, 'avatar', 0);
 
 -- 預填基本成就資料
 INSERT OR IGNORE INTO achievements (id, name, description, requirement_type, requirement_count, reward_coins, reward_title) VALUES 
 (1, '初出茅廬 🗡️', '擊敗第一隻怪物 (完成 1 個任務)。', 'task_completed', 1, 50, '見習勇者'),
 (2, '怪物獵人 🏹', '累計擊敗 10 隻怪物 (完成 10 個任務)。', 'task_completed', 10, 200, '精銳獵人'),
-(3, '屠龍勇士 👑', '累計擊敗 50 隻怪物 (完成 50 個任務)。', 'task_completed', 50, 1000, '傳說英雄');
+(3, '屠龍勇士 👑', '累計擊敗 50 隻怪物 (完成 50 個任務)。', 'task_completed', 50, 1000, '傳說英雄'),
+(4, '百戰百勝 🌟', '累計擊敗 100 隻怪物 (完成 100 個任務)。', 'task_completed', 100, 3000, '不朽神話');

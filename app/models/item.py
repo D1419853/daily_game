@@ -69,6 +69,42 @@ class Item:
             conn.close()
 
     @staticmethod
+    def get_equipped_avatar(user_id):
+        """取得玩家當前裝備的頭貼"""
+        conn = get_db_connection()
+        try:
+            query = """
+                SELECT i.*, ui.id as user_item_id
+                FROM items i
+                JOIN user_items ui ON i.id = ui.item_id
+                WHERE ui.user_id = ? AND ui.is_equipped = 1 AND i.type = 'avatar'
+                LIMIT 1
+            """
+            avatar = conn.execute(query, (user_id,)).fetchone()
+            return dict(avatar) if avatar else None
+        except Exception as e:
+            print(f"Error getting equipped avatar: {e}")
+            return None
+        finally:
+            conn.close()
+
+    @staticmethod
+    def consume_item(user_item_id):
+        """消耗一件物品 (使用後刪除)"""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM user_items WHERE id = ?", (user_item_id,))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error consuming item: {e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
+    @staticmethod
     def buy_item(user_id, item_id):
         """玩家購買商品"""
         conn = get_db_connection()

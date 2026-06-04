@@ -18,6 +18,14 @@ def login_required(view):
         return view(**kwargs)
     return wrapped_view
 
+@main_bp.before_request
+def check_daily_goal():
+    """每個請求前檢查是否觸發每日進度結算與反傷"""
+    if 'user_id' in session:
+        msg = User.process_daily_check(session['user_id'])
+        if msg:
+            flash(msg, 'danger')
+
 @main_bp.route('/')
 @login_required
 def index():
@@ -37,8 +45,9 @@ def index():
         UserMonsterInstance.spawn_for_user(user_id)
         monster = UserMonsterInstance.get_current_for_user(user_id)
 
-    # 3. 獲取當前裝備的武器
+    # 3. 獲取當前裝備的武器與頭貼
     equipped_weapon = Item.get_equipped_weapon(user_id)
+    equipped_avatar = Item.get_equipped_avatar(user_id)
 
     # 4. 獲取使用者的所有冒險任務
     tasks = Task.get_by_user(user_id)
@@ -52,6 +61,7 @@ def index():
         user=user, 
         monster=monster, 
         equipped_weapon=equipped_weapon,
+        equipped_avatar=equipped_avatar,
         tasks=tasks, 
         total_tasks=total_tasks, 
         completed_tasks=completed_tasks
@@ -116,6 +126,9 @@ def profile():
     # 整理已解鎖成就的 ID 方便在範本中判斷亮起狀態
     unlocked_ids = {a['id'] for a in unlocked_achievements}
     
+    # 獲取裝備的頭貼
+    equipped_avatar = Item.get_equipped_avatar(user_id)
+    
     # 獲取已領取的里程碑獎勵
     claimed_rewards = User.get_claimed_rewards(user_id)
     level_rewards_config = User.LEVEL_REWARDS_CONFIG
@@ -127,7 +140,8 @@ def profile():
         unlocked_ids=unlocked_ids,
         leaderboard=leaderboard,
         claimed_rewards=claimed_rewards,
-        level_rewards_config=level_rewards_config
+        level_rewards_config=level_rewards_config,
+        equipped_avatar=equipped_avatar
     )
 
 @main_bp.route('/profile/claim_reward/<int:level>', methods=['POST'])

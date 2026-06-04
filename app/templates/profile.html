@@ -99,6 +99,22 @@
 <div class="row g-4">
     <!-- 成就與等級里程碑 -->
     <div class="col-lg-8">
+        <div class="card profile-card p-4 mb-4 text-center">
+            <div class="mb-3 position-relative d-inline-block mx-auto">
+                {% set dicebear_style = 'pixel-art' %}
+                {% if equipped_avatar %}
+                    {% if '賽博' in equipped_avatar.name %}
+                        {% set dicebear_style = 'bottts' %}
+                    {% elif '像素怪物' in equipped_avatar.name %}
+                        {% set dicebear_style = 'pixel-art-neutral' %}
+                    {% elif '喵星人' in equipped_avatar.name %}
+                        {% set dicebear_style = 'fun-emoji' %}
+                    {% endif %}
+                {% endif %}
+                <img src="https://api.dicebear.com/7.x/{{ dicebear_style }}/svg?seed={{ user.username }}" alt="avatar" class="img-fluid rounded-circle border border-3 border-info p-1" style="width: 120px; height: 120px; background-color: var(--bg-dark);">
+                <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-info text-white fs-6 border border-2 border-dark px-2 py-1">LV.{{ user.level }}</span>
+            </div>
+            
         <div class="card profile-card p-4 h-100">
             <!-- 分頁選單 -->
             <ul class="nav nav-pills mb-4" id="profileTabs" role="tablist" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px;">
@@ -262,7 +278,8 @@
                                                     {% if is_me %}<span class="badge bg-info text-white ms-1" style="font-size: 0.65rem;">您</span>{% endif %}
                                                 </span>
                                                 <small class="text-muted d-block" style="font-size: 0.75rem;">
-                                                    LV.{{ player.level }} · {{ player.current_title or "新手冒險者" }}
+                                                    LV.{{ player.level }} · {{ player.current_title or "新手冒險者" }}<br>
+                                                    HP: {{ player.current_hp }}/{{ player.max_hp }}
                                                 </small>
                                             </div>
                                         </div>

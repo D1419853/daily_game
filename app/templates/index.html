@@ -72,7 +72,17 @@
         <!-- 角色狀態卡片 -->
         <div class="card game-hud p-4 mb-4 text-center">
             <div class="mb-3 position-relative d-inline-block mx-auto">
-                <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed={{ user.username }}" alt="avatar" class="img-fluid rounded-circle border border-2 border-info p-1" style="width: 90px; height: 90px; background-color: var(--bg-dark);">
+                {% set dicebear_style = 'pixel-art' %}
+                {% if equipped_avatar %}
+                    {% if '賽博' in equipped_avatar.name %}
+                        {% set dicebear_style = 'bottts' %}
+                    {% elif '像素怪物' in equipped_avatar.name %}
+                        {% set dicebear_style = 'pixel-art-neutral' %}
+                    {% elif '喵星人' in equipped_avatar.name %}
+                        {% set dicebear_style = 'fun-emoji' %}
+                    {% endif %}
+                {% endif %}
+                <img src="https://api.dicebear.com/7.x/{{ dicebear_style }}/svg?seed={{ user.username }}" alt="avatar" class="img-fluid rounded-circle border border-2 border-info p-1" style="width: 90px; height: 90px; background-color: var(--bg-dark);">
                 <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-info text-white fs-7 border border-2 border-dark">LV.{{ user.level }}</span>
             </div>
             <h4 class="pixel-font text-info mb-1" style="font-size: 1.1rem;">{{ user.username }}</h4>
@@ -94,9 +104,32 @@
                 <small class="text-muted text-uppercase" style="font-size: 0.7rem; font-weight: 700;">經驗值 (EXP)</small>
                 <small class="text-info fw-bold" style="font-size: 0.75rem;">{{ user.xp }} / 100</small>
             </div>
-            <div class="xp-bar-container">
+            <div class="xp-bar-container mb-3">
                 <div class="xp-bar-fill" style="width: {{ user.xp }}%;"></div>
             </div>
+
+            <div class="text-start mb-1 d-flex justify-content-between">
+                <small class="text-muted text-uppercase" style="font-size: 0.7rem; font-weight: 700;">生命值 (HP)</small>
+                <small class="text-danger fw-bold" style="font-size: 0.75rem;">{{ user.current_hp }} / {{ user.max_hp }}</small>
+            </div>
+            <div class="hp-bar-container mb-3" style="height: 12px;">
+                <div class="hp-bar-fill" style="width: {{ (user.current_hp / user.max_hp * 100)|int }}%;"></div>
+            </div>
+            
+            <div class="text-start mb-1 d-flex justify-content-between">
+                <small class="text-muted text-uppercase" style="font-size: 0.7rem; font-weight: 700;">今日目標</small>
+                <small class="text-warning fw-bold" style="font-size: 0.75rem;">{{ user.tasks_done_today }} / {{ user.daily_goal }} 任務</small>
+            </div>
+            <div class="progress mb-2" style="height: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 193, 7, 0.3);">
+                {% set goal_pct = (user.tasks_done_today / user.daily_goal * 100)|int %}
+                {% if goal_pct > 100 %}{% set goal_pct = 100 %}{% endif %}
+                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ goal_pct }}%;"></div>
+            </div>
+            {% if user.tasks_done_today >= user.daily_goal %}
+                <small class="text-success d-block text-start mb-3"><i class="bi bi-check-circle-fill me-1"></i>今日目標已達成，安全了！</small>
+            {% else %}
+                <small class="text-danger d-block text-start mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i>未完成前請小心明日反傷 (30HP)！</small>
+            {% endif %}
         </div>
 
         <!-- 怪物遭遇卡片 -->

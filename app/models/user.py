@@ -16,9 +16,11 @@ class User:
             user_id = cursor.lastrowid
             
             # 2. 初始化勇者角色屬性
+            import datetime
+            today_str = datetime.date.today().isoformat()
             cursor.execute(
-                "INSERT INTO characters (user_id, level, xp, gold, current_title) VALUES (?, 1, 0, 0, '新手冒險者')",
-                (user_id,)
+                "INSERT INTO characters (user_id, level, xp, gold, current_title, current_hp, max_hp, daily_goal, tasks_done_today, last_active_date) VALUES (?, 1, 0, 0, '新手冒險者', 100, 100, 3, 0, ?)",
+                (user_id, today_str)
             )
             
             conn.commit()
@@ -36,7 +38,8 @@ class User:
         conn = get_db_connection()
         try:
             query = """
-                SELECT u.id, u.username, c.level, c.xp, c.gold, c.current_title, u.created_at
+                SELECT u.id, u.username, c.level, c.xp, c.gold, c.current_title, u.created_at,
+                       c.current_hp, c.max_hp, c.daily_goal, c.tasks_done_today, c.last_active_date
                 FROM users u
                 JOIN characters c ON u.id = c.user_id
                 WHERE u.id = ?
@@ -82,7 +85,7 @@ class User:
             conn.close()
 
     @staticmethod
-    def update_character(user_id, gold=None, xp=None, level=None, current_title=None):
+    def update_character(user_id, gold=None, xp=None, level=None, current_title=None, current_hp=None, tasks_done_today=None):
         """彈性更新勇者屬性"""
         conn = get_db_connection()
         try:
@@ -100,6 +103,12 @@ class User:
             if current_title is not None:
                 updates.append("current_title = ?")
                 values.append(current_title)
+            if current_hp is not None:
+                updates.append("current_hp = ?")
+                values.append(current_hp)
+            if tasks_done_today is not None:
+                updates.append("tasks_done_today = ?")
+                values.append(tasks_done_today)
                 
             if not updates:
                 return False
@@ -235,3 +244,52 @@ class User:
         finally:
             conn.close()
 
+    @staticmethod
+    def process_daily_check(user_id):
+        """處理每日登入檢查（判定前一天任務是否達標，若未達標則反傷）"""
+        conn = get_db_connection()
+        import datetime
+        today_str = datetime.date.today().isoformat()
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT current_hp, daily_goal, tasks_done_today, last_active_date, gold FROM characters WHERE user_id = ?", (user_id,))
+            char = cursor.fetchone()
+            if not char:
+                return None
+                
+            last_date = char['last_active_date']
+            if last_date and last_date != today_str:
+                # 跨日結算
+                damage_taken = 0
+                new_hp = char['current_hp']
+                new_gold = char['gold']
+                msg = None
+                
+                if char['tasks_done_today'] < char['daily_goal']:
+                    # 未達標，受到 30 反傷
+                    damage_taken = 30
+                    new_hp -= damage_taken
+                    msg = "⚠️ 您昨天未完成每日目標，遭到怪物反傷失去了 30 點生命值！"
+                    
+                    if new_hp <= 0:
+                        # 死亡懲罰：扣除一半金幣，血量回滿
+                        new_hp = 100
+                        new_gold = int(new_gold / 2)
+                        msg += " 💀 您的血量歸零，被救回了城鎮... 但遺失了一半的金幣！"
+                        
+                # 更新今日狀態
+                cursor.execute(
+                    "UPDATE characters SET last_active_date = ?, tasks_done_today = 0, current_hp = ?, gold = ? WHERE user_id = ?",
+                    (today_str, new_hp, new_gold, user_id)
+                )
+                conn.commit()
+                return msg
+                
+            return None
+        except Exception as e:
+            print(f"Error processing daily check: {e}")
+            conn.rollback()
+            return None
+        finally:
+            conn.close()
