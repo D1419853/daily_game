@@ -117,6 +117,14 @@ def complete_task(task_id):
             # 怪物死亡！發放獎勵
             xp_reward = monster['xp_reward']
             gold_reward = monster['gold_reward']
+            
+            import random
+            extra_msg = ""
+            if random.random() < 0.3:  # 30% 機率獲得額外獎勵
+                bonus_gold = random.randint(20, 100)
+                gold_reward += bonus_gold
+                extra_msg = f" 🎁 運氣爆棚！怪物掉落了額外寶藏，多獲得 🪙 {bonus_gold} 金幣！"
+
             res = User.add_rewards(user_id, xp_reward, gold_reward)
             
             # 紀錄擊敗到圖鑑中
@@ -126,7 +134,7 @@ def complete_task(task_id):
             UserMonsterInstance.spawn_for_user(user_id)
             
             flash(f"⚔️ 任務完成！對 {monster['name']} 造成 {total_damage} 點致命一擊！", 'success')
-            flash(f"🎉 成功擊敗 {monster['name']}！獲得 {xp_reward} EXP 與 🪙 {gold_reward} 金幣！", 'success')
+            flash(f"🎉 成功擊敗 {monster['name']}！獲得 {xp_reward} EXP 與 🪙 {gold_reward} 金幣！{extra_msg}", 'success')
             
             if res and res.get('leveled_up'):
                 flash(f"🌟 恭喜升級！您已達到了等級 {res['new_level']}！", 'info')
@@ -149,9 +157,11 @@ def complete_task(task_id):
                         # 更新頭銜
                         User.update_character(user_id, current_title=ach['reward_title'])
                         flash(f"🏆 解鎖成就：{ach['name']}！獲得 🪙 {ach['reward_coins']} 金幣與稱號「{ach['reward_title']}」！", 'gold')
+            return redirect(url_for('main.index', effect='kill'))
         else:
             # 怪物沒死，普通傷害
             flash(f"⚔️ 任務完成！對 {monster['name']} 造成 {total_damage} 點傷害！(HP: {max(0, monster['current_hp'] - total_damage)}/{monster['max_hp']})", 'success')
+            return redirect(url_for('main.index', effect='damage'))
     else:
         flash('攻擊失敗，系統錯誤', 'danger')
 

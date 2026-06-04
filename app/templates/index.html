@@ -111,6 +111,7 @@
 
             <div class="text-start mb-1 d-flex justify-content-between">
                 <small class="text-danger fw-bold text-uppercase" style="font-size: 0.7rem; font-weight: 800;">MONSTER HP</small>
+                <small class="text-danger fw-bold" style="font-size: 0.75rem;">{{ monster.current_hp }} / {{ monster.max_hp }}</small>
             </div>
             <div class="hp-bar-container mb-3">
                 <div class="hp-bar-fill" style="width: {{ (monster.current_hp / monster.max_hp * 100)|int }}%;"></div>
@@ -285,4 +286,121 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateTimers, 1000);
 });
 </script>
+
+{% if request.args.get('effect') %}
+<style>
+    @keyframes shake {
+        0% { transform: translate(1px, 1px) rotate(0deg); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        20% { transform: translate(-3px, 0px) rotate(1deg); }
+        30% { transform: translate(3px, 2px) rotate(0deg); }
+        40% { transform: translate(1px, -1px) rotate(1deg); }
+        50% { transform: translate(-1px, 2px) rotate(-1deg); }
+        60% { transform: translate(-3px, 1px) rotate(0deg); }
+        70% { transform: translate(3px, 1px) rotate(-1deg); }
+        80% { transform: translate(-1px, -1px) rotate(1deg); }
+        90% { transform: translate(1px, 2px) rotate(0deg); }
+        100% { transform: translate(1px, -2px) rotate(-1deg); }
+    }
+    .shake-anim { animation: shake 0.5s; }
+    .shake-anim-hard { animation: shake 0.5s infinite; }
+    .slash-effect {
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 150%; height: 8px;
+        background: white;
+        box-shadow: 0 0 15px #ff0055, 0 0 30px #ff0055, 0 0 45px #ff0055;
+        transform-origin: center;
+        transform: translate(-50%, -50%) rotate(-45deg) scaleX(0);
+        opacity: 0; z-index: 100; pointer-events: none;
+    }
+    @keyframes slash {
+        0% { transform: translate(-50%, -50%) rotate(-45deg) scaleX(0); opacity: 1; }
+        50% { transform: translate(-50%, -50%) rotate(-45deg) scaleX(1); opacity: 1; }
+        100% { transform: translate(-50%, -50%) rotate(-45deg) scaleX(1.5); opacity: 0; }
+    }
+    .slash-anim { animation: slash 0.3s ease-out forwards; }
+    .kill-text {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: 900; font-size: 3.5rem;
+        color: #ff0844;
+        text-shadow: 2px 2px 0px #fff, -2px -2px 0px #fff, 0 0 20px #ff0844;
+        z-index: 101; pointer-events: none; opacity: 0;
+    }
+    @keyframes killTextAnim {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+        80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -70%) scale(1); opacity: 0; }
+    }
+    .kill-text-anim { animation: killTextAnim 1.5s ease-out forwards; }
+    .kill-particle {
+        position: absolute; width: 8px; height: 8px; border-radius: 50%;
+        pointer-events: none; z-index: 1000;
+        animation: explode 0.8s ease-out forwards;
+    }
+    @keyframes explode {
+        0% { transform: translate(0, 0) scale(1); opacity: 1; }
+        100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const effect = "{{ request.args.get('effect') }}";
+    const monsterImg = document.querySelector('.monster-img');
+    const monsterCard = document.querySelector('.monster-card');
+    
+    if (monsterCard && monsterImg) {
+        const imgContainer = monsterImg.parentElement;
+        imgContainer.style.position = 'relative';
+        
+        const slash = document.createElement('div');
+        slash.className = 'slash-effect slash-anim';
+        imgContainer.appendChild(slash);
+
+        if (effect === 'damage') {
+            monsterImg.style.filter = "drop-shadow(0 0 20px red) brightness(1.5) sepia(1) hue-rotate(-50deg)";
+            monsterImg.classList.add('shake-anim');
+            setTimeout(() => {
+                monsterImg.style.filter = "drop-shadow(0 0 15px rgba(0, 242, 254, 0.5))";
+                monsterImg.classList.remove('shake-anim');
+                slash.remove();
+            }, 500);
+        } else if (effect === 'kill') {
+            monsterCard.classList.add('shake-anim-hard');
+            const killText = document.createElement('div');
+            killText.className = 'kill-text kill-text-anim';
+            killText.textContent = 'SLAIN!';
+            imgContainer.appendChild(killText);
+
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.className = 'kill-particle';
+                const angle = Math.random() * Math.PI * 2;
+                const vel = 50 + Math.random() * 100;
+                p.style.setProperty('--tx', `${Math.cos(angle)*vel}px`);
+                p.style.setProperty('--ty', `${Math.sin(angle)*vel}px`);
+                const colors = ['#ff477e', '#ff0844', '#f6d365', '#fda085', '#ffffff'];
+                p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+                p.style.left = '50%'; p.style.top = '50%';
+                imgContainer.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+
+            setTimeout(() => {
+                monsterCard.classList.remove('shake-anim-hard');
+                slash.remove();
+                killText.remove();
+            }, 1500);
+        }
+    }
+
+    const url = new URL(window.location);
+    url.searchParams.delete('effect');
+    window.history.replaceState({}, document.title, url);
+});
+</script>
+{% endif %}
 {% endblock %}

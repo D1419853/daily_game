@@ -12,7 +12,7 @@ def register():
         return redirect(url_for('main.index'))
         
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username', '').strip()
         password = request.form.get('password')
 
         if not username or not password:
@@ -45,7 +45,7 @@ def login():
         return redirect(url_for('main.index'))
 
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username', '').strip()
         password = request.form.get('password')
 
         if not username or not password:
