@@ -1,7 +1,10 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'instance', 'database.db')
+# 資料庫存放在 AppData/Local，不在 OneDrive 同步範圍，避免重啟後資料消失
+_APP_DATA_DIR = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'daily_game')
+os.makedirs(_APP_DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(_APP_DATA_DIR, 'database.db')
 
 def get_db_connection():
     """取得資料庫連線"""

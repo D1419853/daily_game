@@ -1,5 +1,6 @@
 from flask import Flask
 import os
+from datetime import timedelta
 from app.models.database import init_db
 
 def create_app():
@@ -12,6 +13,7 @@ def create_app():
     app.config.from_mapping(
         SECRET_KEY='dev_secret_key_please_change_in_production',
         DATABASE=os.path.join(app.instance_path, 'database.db'),
+        PERMANENT_SESSION_LIFETIME=timedelta(days=30),  # session 保存 30 天
     )
 
     # 確保 instance 資料夾存在

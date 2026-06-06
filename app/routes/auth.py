@@ -55,6 +55,7 @@ def login():
         user = User.get_by_username(username)
         if user and check_password_hash(user['password_hash'], password):
             session.clear()
+            session.permanent = True   # 讓 session 在瀏覽器關閉後仍然存在
             session['user_id'] = user['id']
             session['username'] = user['username']
             flash('歡迎回來，冒險者！準備好迎接挑戰了嗎？', 'success')
